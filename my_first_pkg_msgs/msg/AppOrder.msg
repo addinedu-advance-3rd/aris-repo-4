@@ -1,0 +1,2 @@
+string topping_type
+string cup_or_cone

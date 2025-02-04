@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@color/pink1">
+
+    <ToggleButton
+        android:id="@+id/language_btn"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_gravity="top|right"
+        android:layout_margin="0dp"
+        android:background="@drawable/kor_img"
+        android:padding="0dp"
+        android:textOff=""
+        android:textOn="" />
+
+    <TextView
+        android:id="@+id/order_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="컵과 콘 중에서 하나만 선택해주세요"
+        android:textSize="20sp"
+        android:layout_marginBottom="30dp"
+        android:gravity="center"/>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:id="@+id/cup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:id="@+id/cup_btn"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:background="@drawable/cup"
+            android:contentDescription="cup_img"/>
+
+        <TextView
+            android:id="@+id/cup_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="컵(cup)"/>
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:id="@+id/cone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageButton
+            android:id="@+id/cone_btn"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:background="@drawable/cone"
+            android:contentDescription="cone img"/>
+
+        <TextView
+            android:id="@+id/cone_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="콘(cone)"/>
+    </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
