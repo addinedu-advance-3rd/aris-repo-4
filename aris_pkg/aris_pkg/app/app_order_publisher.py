@@ -4,15 +4,15 @@ from rclpy.node import Node
 import socket
 import re
 
-from app_package_msgs.msg import AppOrder 
+from my_first_pkg_msgs.msg import AppOrder 
 
 class OrderPublisher(Node):
     
     def __init__(self):
-        super().__init__('app_order')
+        super().__init__('order')
         self.host = "192.168.0.61"  # 서버 IP (서버가 실행되는 PC의 IP 주소)
         self.port = 6789  # 클라이언트가 사용하는 포트 번호
-        self.publisher = self.create_publisher(AppOrder, '/order', 10)
+        self.publisher = self.create_publisher(AppOrder, '/app_order', 10)
         self.order = AppOrder()
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

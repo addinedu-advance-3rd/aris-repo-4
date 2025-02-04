@@ -41,6 +41,7 @@ class ToppingMain(object):
         self._tcp_acc = 2000  # TCP 가속도 설정
         self._angle_speed = 50  # 관절 속도 설정
         self._angle_acc = 500  # 관절 가속도 설정
+        self._angle_speed_low = 10  
         self._vars = {}
         self._funcs = {}
         self._robot_init()
@@ -131,27 +132,10 @@ class ToppingMain(object):
             self._arm.clean_error()
 
     def initialization(self):
-        # 컵 디스팬서 끄기(초기화)
-        code = self._arm.set_cgpio_analog(0, 0)
-        if not self._check_code(code, 'set_cgpio_analog'):
-            return
-        code = self._arm.set_cgpio_analog(1, 0)
-        if not self._check_code(code, 'set_cgpio_analog'):
-            return            
-
         # 그리퍼 열기(초기화)
         code = self._arm.open_lite6_gripper()
         if not self._check_code(code, 'open_lite6_gripper'):
             return
-        
-        # 컵 디스팬서 우로이동(컵 꺼낼 준비)
-        code = self._arm.set_cgpio_analog(0, 5)
-        if not self._check_code(code, 'set_cgpio_analog'):
-            return
-        code = self._arm.set_cgpio_analog(1, 5)
-        if not self._check_code(code, 'set_cgpio_analog'):
-            return
-
         # motion plaaning으로 홈으로가는 로직 필요
 
         # Home Sweet Home
@@ -159,9 +143,21 @@ class ToppingMain(object):
         if not self._check_code(code, 'set_servo_angle'):
             return
 
-    def mode_prohibit_detection(self):
-        code = self._arm.set_pause_time(7)
-        if not self._check_code(code, 'set_pause_time'):
+    def dispenser_moveright(self):
+        # 컵 디스팬서 끄기(초기화)
+        code = self._arm.set_cgpio_analog(0, 0)
+        if not self._check_code(code, 'set_cgpio_analog'):
+            return
+        code = self._arm.set_cgpio_analog(1, 0)
+        if not self._check_code(code, 'set_cgpio_analog'):
+            return            
+        
+        # 컵 디스팬서 우로이동(컵 꺼낼 준비)
+        code = self._arm.set_cgpio_analog(0, 5)
+        if not self._check_code(code, 'set_cgpio_analog'):
+            return
+        code = self._arm.set_cgpio_analog(1, 5)
+        if not self._check_code(code, 'set_cgpio_analog'):
             return
         
     def grip_capsule(self, a):
@@ -228,9 +224,8 @@ class ToppingMain(object):
             code = self._arm.set_servo_angle(angle=[218.7, -2.0, 20.6, 92.0, 89.2, 22.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return
-        
-    def pick_up_zone_to_holder(self):
-        # 캡슐홀더로 이동
+                
+    def pick_up_zone_to_holder(self):  # 캡슐홀더로 이동
         code = self._arm.set_servo_angle(angle=[164.7, -5.7, 8.9, 90.9, 89.8, 14.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return
@@ -244,8 +239,7 @@ class ToppingMain(object):
         if not self._check_code(code, 'set_servo_angle'):
             return
     
-    def put_capsule(self):
-        # 캡슐 넣고 나오기       
+    def put_capsule(self):  # 캡슐 넣고 나오기       
         code = self._arm.set_servo_angle(angle=[17.4, 3.5, 81.4, 93.8, 73, 77.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return
@@ -265,15 +259,14 @@ class ToppingMain(object):
         if not self._check_code(code, 'set_servo_angle'):
             return
     
-    def holder_to_cup_dispensor(self):
-        # 컵 잡는 곳으로 이동            
+    def holder_to_cup_dispensor(self): # 컵 잡는 곳으로 이동            
         code = self._arm.set_servo_angle(angle=[-10.9, 22.0, 49.5, 102.6, -96.6, -26.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return    
         code = self._arm.set_servo_angle(angle=[-10.9, 52.0, 55.2, 104.1, -90.8, -3.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return
-    
+        
     def grip_cup(self):
         # 컵디스팬서 좌로이동(컵꺼내짐)    
         code = self._arm.set_cgpio_analog(0, 0)
@@ -295,7 +288,7 @@ class ToppingMain(object):
         code = self._arm.set_servo_angle(angle=[-10.9, 22.0, 49.5, 102.6, -96.6, -26.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return
-
+        
     def cup_dispensor_to_ice_cream_receiver(self): 
 
         #아이스크림 받는 곳으로 이동            
@@ -309,7 +302,7 @@ class ToppingMain(object):
         code = self._arm.set_pause_time(1)
         if not self._check_code(code, 'set_pause_time'):
             return
-
+        
     def press_ice_cream(self):
 
         # 프레스기 ON       
@@ -325,320 +318,28 @@ class ToppingMain(object):
             return
            
     def receive_ice_cream(self): # 정밀한 제어 필요 고려
-        code = self._arm.set_pause_time(5)
+        code = self._arm.set_pause_time(3)
         if not self._check_code(code, 'set_pause_time'):
             return 
         # 몸통 접기         
-        code = self._arm.set_servo_angle(angle=[30.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        code = self._arm.set_servo_angle(angle=[30.0, -24.5, 10.9, 90.0, 90.0, 35.4], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
-            return
-    
-    def receive_topping(self):
-            
-        # 토핑 옵션(1:선택안함, 2:0번, 3:1번, 4:2번, 5:0번+1번, 6:1번+2번, 7:0번+2번, 8:모든토핑)
+            return      
         
-        # 토핑옵션 존재할시 중립위치로 이동
-        if self.b!=1:   
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-
-        if self.b==2:    
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return        
-
-        elif self.b==3:                    
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return     
-
-        elif self.b==4:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return       
-
-        elif self.b==5:                    
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-        elif self.b==6:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-        elif self.b==7:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-
-        elif self.b==8:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-
+        
     def receive_topping(self, b):
         
-        # 토핑 옵션(1:선택안함, 2:0번, 3:1번, 4:2번, 5:0번+1번, 6:1번+2번, 7:0번+2번, 8:모든토핑)
+        # 토핑 옵션(1:선택안함, 2:0번, 3:1번, 4:2번)
         
         # 토핑옵션 존재할시 중립위치로 이동
-        if b!=1:   
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if b!=0:   
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return
 
-        if b==2:    
+        if b==1:    
             #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            code = self._arm.set_servo_angle(angle=[131.3, 11.4, 33.1, 165.4, 69.0, 5.4], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return
             code = self._arm.set_pause_time(1)
@@ -656,13 +357,13 @@ class ToppingMain(object):
             code = self._arm.set_pause_time(1)
             if not self._check_code(code, 'set_pause_time'):
                 return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return        
 
-        elif b==3:                    
+        elif b==2:                    
             #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            code = self._arm.set_servo_angle(angle=[131.0, -12.5, 9.5, 213.0, 71.3, -11.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return         
             code = self._arm.set_pause_time(1)
@@ -680,13 +381,13 @@ class ToppingMain(object):
             code = self._arm.set_pause_time(1)
             if not self._check_code(code, 'set_pause_time'):
                 return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return     
 
-        elif b==4:    
+        elif b==3:    
             # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            code = self._arm.set_servo_angle(angle=[62.4, -22.9, 2.8, 149.8, 67.4, 12.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return
             code = self._arm.set_pause_time(1)
@@ -704,220 +405,9 @@ class ToppingMain(object):
             code = self._arm.set_pause_time(1)
             if not self._check_code(code, 'set_pause_time'):
                 return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
             if not self._check_code(code, 'set_servo_angle'):
                 return       
-
-        elif b==5:                    
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-        elif b==6:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-        elif b==7:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-
-        elif b==8:    
-            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
-            code = self._arm.set_servo_angle(angle=[62.4, -5.8, 2.6, 152.1, 82.5, 4.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return              
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            
-            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
-            code = self._arm.set_servo_angle(angle=[131.0, 1.4, 9.4, 211.3, 83.2, -4.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return         
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return             
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-                
-            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
-            code = self._arm.set_servo_angle(angle=[131.3, 19.7, 33.0, 166.0, 77.1, 3.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return     
-            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(3)
-            if not self._check_code(code, 'set_pause_time'):
-                return
-            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
-            if not self._check_code(code, 'set_cgpio_digital'):
-                return
-            code = self._arm.set_pause_time(1)
-            if not self._check_code(code, 'set_pause_time'):
-                return 
-            code = self._arm.set_servo_angle(angle=[90.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
-            if not self._check_code(code, 'set_servo_angle'):
-                return
 
     def to_pick_up_zone(self):    
         # 아이스크림 놓으러 이동
@@ -993,7 +483,50 @@ class ToppingMain(object):
             if not self._check_code(code, 'set_servo_angle'):
                 return 
         
-    def finish_process(self):   
+    def grip_empty_capsule(self):  # 캡슐 넣고 나오기       
+        code = self._arm.set_servo_angle(angle=[17.4, 3, 77.3, 94.8, 73.3, 73.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return    
+        code = self._arm.set_pause_time(0.5)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.close_lite6_gripper()
+        if not self._check_code(code, 'close_lite6_gripper'):
+            return
+        code = self._arm.set_pause_time(3)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.set_servo_angle(angle=[17.4, 3.5, 81.4, 93.8, 73, 77.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[12.0, -41.7, 44.6, 101.1, 18.5, 78.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        
+    def drop_empty_capsule(self):
+        code = self._arm.set_servo_angle(angle=[-2.6, -42.3, 44.3, 95.2, 32.9, 83.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[12.0, -44.5, 14.4, 147.7, 35.6, 27.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[32.8, 6.7, 15.1, 122.6, 85.5, 7.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[32.8, 6.7, 15.1, 122.6, 85.5, -172.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.open_lite6_gripper()
+        if not self._check_code(code, 'open_lite6_gripper'):
+            return
+        code = self._arm.set_servo_angle(angle=[32.8, 6.7, 15.1, 122.6, 85.5, 7.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return 
+          
+    def finish_process(self): 
+        code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return  
         # Home Sweet Home    
         code = self._arm.set_servo_angle(angle=[180.0, -15.0, 25.0, 180.0, 50.0, 0.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
@@ -1003,13 +536,375 @@ class ToppingMain(object):
         code = self._arm.set_tgpio_digital(0, 0, delay_sec=0)
         if not self._check_code(code, 'set_tgpio_digital'):
             return
+
+    def co_initialization(self):
+        code = self._arm.open_lite6_gripper()
+        if not self._check_code(code, 'open_lite6_gripper'):
+            return
+        code = self._arm.set_servo_angle(angle=[180.0, -15.0, 25.0, 180.0, 50.0, 0.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
     
+    def co_grip_capsule(self, a):
+        # 캡슐 위치옵션(1:1번캡슐, 2:2번캡슐, 3:3번캡슐)
+        # 1번 캡슐 잡고 들어올리기
+        if a==1:
+            code = self._arm.set_servo_angle(angle=[174.1, 47.2, 67.7, 84.5, 92, 20.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_servo_angle(angle=[191.3, 48.1, 69.2, 100.6, 85.9, 20.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_pause_time(0.5)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.close_lite6_gripper()
+            if not self._check_code(code, 'close_lite6_gripper'):
+                return
+            code = self._arm.set_pause_time(2)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.set_servo_angle(angle=[191.3, 34.6, 68.2, 99.5, 83.7, 33.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+
+        # 2번 캡슐 잡고 들어올리기
+        elif a==2:
+            code = self._arm.set_servo_angle(angle=[169.3, 25.1, 24.4, 79.4, 89.8, -0.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_servo_angle(angle=[200.2, 26.2, 26.6, 110.3, 89.8, 0.5], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_pause_time(0.5)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.close_lite6_gripper()
+            if not self._check_code(code, 'close_lite6_gripper'):
+                return
+            code = self._arm.set_pause_time(2)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.set_servo_angle(angle=[200.2, 2.6, 25.2, 108.8, 82.3, 21.5], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+
+        # 3번 캡슐 잡고 들어올리기        
+        elif a==3:
+            code = self._arm.set_servo_angle(angle=[180.2, 29.5, 33.1, 53.7, 92.1, 2.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_servo_angle(angle=[218.7, 24.0, 22.1, 92.2, 90.1, -1.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_pause_time(0.5)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.close_lite6_gripper()
+            if not self._check_code(code, 'close_lite6_gripper'):
+                return
+            code = self._arm.set_pause_time(2)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.set_servo_angle(angle=[218.7, -2.0, 20.6, 92.0, 89.2, 22.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+    
+    def co_pick_up_zone_to_holder(self):  # 캡슐홀더로 이동
+        code = self._arm.set_servo_angle(angle=[164.7, -5.7, 8.9, 90.9, 89.8, 14.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[0.0, -5.4, 9.2, 90.0, 90.0, 14.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[1.4, -50.1, 11.7, 182.9, 28.2, -2.5], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[12.0, -40.2, 49.1, 92.3, 18.1, 87.5], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+    
+    def co_put_capsule(self):  # 캡슐 넣고 나오기       
+        code = self._arm.set_servo_angle(angle=[17.4, 3.5, 81.4, 93.8, 73, 77.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[17.4, 3, 77.3, 94.8, 73.3, 73.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return    
+        code = self._arm.set_pause_time(0.5)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.open_lite6_gripper()
+        if not self._check_code(code, 'open_lite6_gripper'):
+            return
+        code = self._arm.set_pause_time(3)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.set_servo_angle(angle=[12.0, -41.7, 44.6, 101.1, 18.5, 78.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+    
+    def co_holder_to_cone_tray(self):
+        code = self._arm.set_servo_angle(angle=[-6.3, 35.1, 69.3, 84.8, -86.4, -34.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[-6.3, 59.3, 74.3, 83.9, -88.3, -14.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return 
+           
+    def co_grip_cone_tray(self):
+        code = self._arm.set_cgpio_analog(0, 0)
+        if not self._check_code(code, 'set_cgpio_analog'):
+            return
+        code = self._arm.set_cgpio_analog(1, 5)
+        if not self._check_code(code, 'set_cgpio_analog'):
+            return
+        code = self._arm.set_pause_time(2)
+        if not self._check_code(code, 'set_pause_time'):
+            return     
+        code = self._arm.close_lite6_gripper()
+        if not self._check_code(code, 'close_lite6_gripper'):
+            return
+        code = self._arm.set_pause_time(2)
+        if not self._check_code(code, 'set_pause_time'):
+            return 
+        code = self._arm.set_servo_angle(angle=[-6.3, 35.1, 69.3, 84.8, -86.4, -34.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+    
+    def co_move_to_get_cone(self):
+        code = self._arm.set_servo_angle(angle=[-40.0, -20.0, 31.7, 96.2, 2.5, -6.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[-90.0, -31.8, 14.8, 90.0, 90.0, 46.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[-160.0, -14.7, 33.5, 103.7, 75.0, 46.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return  
+        #콘 올려놓을때까지 기다리는 로직 필요
+        code = self._arm.set_pause_time(5)
+        if not self._check_code(code, 'set_pause_time'):
+            return   
+ 
+    
+    def co_to_ice_cream_receiver(self):
+        code = self._arm.set_servo_angle(angle=[0.0, 0.9, 8.6, 90.0, 90.0, 7.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[16.4, 11.5, 55.2, 101.9, 78.8, 42.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return 
+    
+    def co_receive_ice_cream(self):
+        
+        # 프레스기 ON       
+        code = self._arm.set_cgpio_digital(3, 1, delay_sec=0)
+        if not self._check_code(code, 'set_cgpio_digital'):
+            return
+        code = self._arm.set_pause_time(11)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.set_servo_angle(angle=[16.4, 18.3, 51.4, 103.8, 81.2, 32.1], speed=self._angle_speed_low, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_pause_time(4)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        # 프레스기 OFF    
+        code = self._arm.set_cgpio_digital(3, 0, delay_sec=0)
+        if not self._check_code(code, 'set_cgpio_digital'):
+            return
+        code = self._arm.set_pause_time(3)
+        if not self._check_code(code, 'set_pause_time'):
+            return 
+        code = self._arm.set_servo_angle(angle=[30.0, -24.5, 10.9, 90.0, 90.0, 35.4], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+    
+    def co_receive_topping(self, b):
+        
+        # 토핑 옵션(1:선택안함, 2:0번, 3:1번, 4:2번)
+        
+        # 토핑옵션 존재할시 중립위치로 이동
+        if b!=0:   
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+
+        if b==1:    
+            #0번 토핑기 위치로 가서 토핑 받고 중립위치 이동     
+            code = self._arm.set_servo_angle(angle=[131.3, 11.4, 33.1, 165.4, 69.0, 5.4], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_pause_time(1)
+            if not self._check_code(code, 'set_pause_time'):
+                return     
+            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
+            if not self._check_code(code, 'set_cgpio_digital'):
+                return
+            code = self._arm.set_pause_time(3)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
+            if not self._check_code(code, 'set_cgpio_digital'):
+                return
+            code = self._arm.set_pause_time(1)
+            if not self._check_code(code, 'set_pause_time'):
+                return 
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return        
+
+        elif b==2:                    
+            #1번 토핑기 위치로 가서 토핑 받고 중립위치 이동   
+            code = self._arm.set_servo_angle(angle=[131.0, -12.5, 9.5, 213.0, 71.3, -11.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return         
+            code = self._arm.set_pause_time(1)
+            if not self._check_code(code, 'set_pause_time'):
+                return     
+            code = self._arm.set_cgpio_digital(1, 1, delay_sec=0)
+            if not self._check_code(code, 'set_cgpio_digital'):
+                return
+            code = self._arm.set_pause_time(3)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.set_cgpio_digital(1, 0, delay_sec=0)
+            if not self._check_code(code, 'set_cgpio_digital'):
+                return
+            code = self._arm.set_pause_time(1)
+            if not self._check_code(code, 'set_pause_time'):
+                return             
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return     
+
+        elif b==3:    
+            # 2번 토핑기 위치로 가서 토핑 받고 중립위치 이동    
+            code = self._arm.set_servo_angle(angle=[62.4, -22.9, 2.8, 149.8, 67.4, 12.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return
+            code = self._arm.set_pause_time(1)
+            if not self._check_code(code, 'set_pause_time'):
+                return     
+            code = self._arm.set_cgpio_digital(2, 1, delay_sec=0)
+            if not self._check_code(code, 'set_cgpio_digital'):
+                return
+            code = self._arm.set_pause_time(3)
+            if not self._check_code(code, 'set_pause_time'):
+                return
+            code = self._arm.set_cgpio_digital(2, 0, delay_sec=0)
+            if not self._check_code(code, 'set_cgpio_digital'):
+                return
+            code = self._arm.set_pause_time(1)
+            if not self._check_code(code, 'set_pause_time'):
+                return              
+            code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+            if not self._check_code(code, 'set_servo_angle'):
+                return    
+    
+    def co_give_ice_cream_cone(self):
+        code = self._arm.set_servo_angle(angle=[200.0, -14.7, 33.5, 103.7, 75.0, 46.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        #콘 가져갈때까지 기다리는 로직 필요
+        code = self._arm.set_pause_time(5)
+        if not self._check_code(code, 'set_pause_time'):
+            return  
+               
+    def co_place_cone_tray(self):
+        code = self._arm.set_servo_angle(angle=[270.0, -31.8, 14.8, 90.0, 90.0, 46.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[320.0, -20.0, 31.7, 96.2, 2.5, -6.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[353.7, 35.1, 69.3, 84.8, -86.4, -34.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[353.7, 59.3, 74.3, 83.9, -88.3, -14.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_pause_time(1)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.open_lite6_gripper()
+        if not self._check_code(code, 'open_lite6_gripper'):
+            return
+        code = self._arm.set_pause_time(1)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.set_servo_angle(angle=[353.7, 35.1, 69.3, 84.8, -86.4, -34.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[320.0, -20.0, 31.7, 96.2, 2.5, -6.7], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[270.0, -31.8, 14.8, 90.0, 90.0, 46.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+    
+    def co_grip_empty_capsule(self):  # 캡슐 넣고 나오기       
+        code = self._arm.set_servo_angle(angle=[17.4, 3, 77.3, 94.8, 73.3, 73.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return    
+        code = self._arm.set_pause_time(0.5)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.close_lite6_gripper()
+        if not self._check_code(code, 'close_lite6_gripper'):
+            return
+        code = self._arm.set_pause_time(3)
+        if not self._check_code(code, 'set_pause_time'):
+            return
+        code = self._arm.set_servo_angle(angle=[17.4, 3.5, 81.4, 93.8, 73, 77.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[12.0, -41.7, 44.6, 101.1, 18.5, 78.2], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        
+    def co_drop_empty_capsule(self):
+        code = self._arm.set_servo_angle(angle=[-2.6, -42.3, 44.3, 95.2, 32.9, 83.8], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[12.0, -44.5, 14.4, 147.7, 35.6, 27.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[32.8, 6.7, 15.1, 122.6, 85.5, 7.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.set_servo_angle(angle=[32.8, 6.7, 15.1, 122.6, 85.5, -172.9], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        code = self._arm.open_lite6_gripper()
+        if not self._check_code(code, 'open_lite6_gripper'):
+            return
+        code = self._arm.set_servo_angle(angle=[32.8, 6.7, 15.1, 122.6, 85.5, 7.1], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+        
+    def co_finish_process(self): 
+        code = self._arm.set_servo_angle(angle=[90.0, -13.5, 8.7, 90.0, 90.0, 22.3], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return  
+        # Home Sweet Home    
+        code = self._arm.set_servo_angle(angle=[180.0, -15.0, 25.0, 180.0, 50.0, 0.0], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        if not self._check_code(code, 'set_servo_angle'):
+            return
+            
+        # gripper off    
+        code = self._arm.set_tgpio_digital(0, 0, delay_sec=0)
+        if not self._check_code(code, 'set_tgpio_digital'):
+            return
+                   
     # Robot Main Run
     def run(self):
         try:
             self.connect_machine()
             print(self.a,self.b)
-
+            
             self.initialization()
 
             self.grip_capsule(1)
@@ -1031,9 +926,50 @@ class ToppingMain(object):
             self.receive_topping(1)
 
             self.to_pick_up_zone()    
-                       
-            self.finish_process()   
+            
+            self.pick_up_zone_to_holder() 
+            
+            self.grip_empty_capsule()  
+            
+            self.drop_empty_capsule()
+                
+            self.finish_process()
+            
 
+            
+            # self.co_initialization()
+
+            # self.co_grip_capsule(1)
+            
+            # self.co_pick_up_zone_to_holder()
+                
+            # self.co_put_capsule()
+
+            # self.co_holder_to_cone_tray()
+
+            # self.co_grip_cone_tray()
+            
+            # self.co_move_to_get_cone()
+            
+
+            # self.co_to_ice_cream_receiver()   
+            
+            # self.co_receive_ice_cream() 
+            
+            # self.co_receive_topping(1)
+            
+            # self.co_give_ice_cream_cone()
+            
+            
+            # self.co_place_cone_tray()    
+            
+            # self.co_pick_up_zone_to_holder() 
+            
+            # self.co_grip_empty_capsule()  
+            
+            # self.co_drop_empty_capsule()
+                
+            # self.co_finish_process()
         except Exception as e:
             self.pprint('MainException: {}'.format(e))
         self.alive = False
@@ -1101,4 +1037,3 @@ if __name__ == '__main__':
 
     # def finish_process(self):
     #     self.get_logger().info("Finishing process and resetting system...")
-
