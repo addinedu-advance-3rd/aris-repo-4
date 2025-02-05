@@ -5,14 +5,39 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tv_database_content"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="데이터베이스 내용이 여기에 표시됩니다."
-            android:padding="16dp"/>
+            android:orientation="vertical">
+
+            <!-- 일반 텍스트로 데이터 표시 -->
+            <TextView
+                android:id="@+id/tv_inventory_data"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="데이터 로딩 중..."
+                android:paddingBottom="20dp" />
+
+            <!-- 주문 테이블 제목 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📌 주문 내역"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:paddingBottom="10dp" />
+
+            <!-- 주문 내역을 표시할 TableLayout -->
+            <TableLayout
+                android:id="@+id/order_table"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:stretchColumns="*" />
+        </LinearLayout>
     </ScrollView>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
