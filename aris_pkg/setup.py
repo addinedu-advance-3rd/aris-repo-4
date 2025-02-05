@@ -25,7 +25,8 @@ setup(
             'finger_control = aris_pkg.motion_following.finger_control:main',
             'warningRos = aris_pkg.prohibit.warningRos:main',
             'main_process = aris_pkg.main.main_process:main',
-            'app_order_publisher = aris_pkg.app.app_order_publisher:main'
+            'app_order_publisher = aris_pkg.app.app_order_publisher:main',
+            'action_moveit = aris_pkg.moveit.action_moveit:main'
         ],
     },
 )

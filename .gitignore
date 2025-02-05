@@ -1,0 +1,4 @@
+# Gradle 캐시 폴더 무시
+aris_pkg/aris_pkg/app/MimoKioskApp/.gradle/
+aris_pkg/aris_pkg/app/MimoKioskApp/local.properties
+
