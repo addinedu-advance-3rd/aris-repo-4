@@ -1,6 +1,8 @@
 package com.example.mimokioskapp;
 
+import android.app.AlertDialog;
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
@@ -14,6 +16,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+import android.widget.EditText;
 
 import androidx.annotation.Nullable;
 
@@ -35,6 +38,7 @@ public class A_WaitingActivity extends Activity {
     private static final String TAG = "A_WaitingActivity"; // 로그 태그
     private static final String CLIENT_ID = "a4zgp0vwh8"; // 네이버 클라이언트 ID
     private static final String CLIENT_SECRET = "IB5GVyMe4O255EB2u61vHfZMla9GVZ87GcWEuMhW"; // 네이버 클라이언트 Secret
+    private static final String ADMIN_PASSWORD = "1234";
 
     private String languageMode = "ko";
     private static final String ORDER_KEYWORD_KR = "주문";
@@ -225,7 +229,33 @@ public class A_WaitingActivity extends Activity {
         intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
         speechRecognizer.startListening(intent);
     }
+    // "관리자 모드" 버튼 클릭 시 실행되는 메서드
+    public void showAdminPasswordDialog(View view) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("비밀번호를 입력하세요");
 
+        // 비밀번호 입력 필드 추가
+        final EditText input = new EditText(this);
+        builder.setView(input);
+
+        builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String enteredPassword = input.getText().toString();
+                if (enteredPassword.equals(ADMIN_PASSWORD)) {
+                    // 비밀번호가 맞으면 관리자 화면으로 이동
+                    Intent intent = new Intent(A_WaitingActivity.this, AdminActivity.class);
+                    startActivity(intent);
+                } else {
+                    // 비밀번호가 틀리면 경고 메시지 표시
+                    Toast.makeText(A_WaitingActivity.this, "비밀번호가 틀렸습니다.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        builder.setNegativeButton("취소", null);
+        builder.show();
+    }
     private void goToNextScreen() {
         Intent intent = new Intent(A_WaitingActivity.this, B_OrderActivity.class);
         intent.putExtra("languageMode", languageMode);

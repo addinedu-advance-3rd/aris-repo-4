@@ -10,17 +10,23 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DatabaseHelper extends SQLiteOpenHelper {
     // 테이블 및 컬럼 이름 설정
     public static final String DATABASE_NAME = "IceCreamShop.db";
+    public static final int DATABASE_VERSION = 2; // 버전 변경 (기존 1 -> 2)
+
     public static final String ICE_CREAM_TABLE = "ice_cream_inventory";
     public static final String TOPPING_TABLE = "topping_inventory";
     public static final String CUP_CONE_TABLE = "cup_cone_inventory";
     public static final String ORDER_TABLE = "ice_cream_order";
 
+    // 공통 컬럼
     public static final String COL_ID = "ID";
+    public static final String COL_STOCK = "stock";
+
+    // 주문 테이블 컬럼
     public static final String COL_FLAVOR = "flavor";
     public static final String COL_TOPPING = "topping";
     public static final String COL_CUP_CONE = "cup_cone";
     public static final String COL_PRICE = "price";
-    public static final String COL_STOCK = "stock";  // 재고를 저장할 컬럼
+    public static final String COL_TIMESTAMP = "timestamp";
 
     // 가격 설정
     private static final int ICE_CREAM_PRICE = 4000;  // 아이스크림 가격
@@ -41,12 +47,28 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         // 재고 테이블 생성
-        db.execSQL("CREATE TABLE " + ICE_CREAM_TABLE + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, flavor TEXT, stock INTEGER)");
-        db.execSQL("CREATE TABLE " + TOPPING_TABLE + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, topping TEXT, stock INTEGER)");
-        db.execSQL("CREATE TABLE " + CUP_CONE_TABLE + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, cup_cone TEXT, stock INTEGER)");
+        db.execSQL("CREATE TABLE " + ICE_CREAM_TABLE + " (" +
+                COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COL_FLAVOR + " TEXT, " +
+                COL_STOCK + " INTEGER)");
 
-        // 주문 테이블 생성
-        db.execSQL("CREATE TABLE " + ORDER_TABLE + " (ID INTEGER PRIMARY KEY AUTOINCREMENT, flavor TEXT, topping TEXT, cup_cone TEXT, price INTEGER)");
+        db.execSQL("CREATE TABLE " + TOPPING_TABLE + " (" +
+                COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COL_TOPPING + " TEXT, " +
+                COL_STOCK + " INTEGER)");
+
+        db.execSQL("CREATE TABLE " + CUP_CONE_TABLE + " (" +
+                COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COL_CUP_CONE + " TEXT, " +
+                COL_STOCK + " INTEGER)");
+
+        db.execSQL("CREATE TABLE " + ORDER_TABLE + " (" +
+                COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                COL_FLAVOR + " TEXT, " +
+                COL_TOPPING + " TEXT, " +
+                COL_CUP_CONE + " TEXT, " +
+                COL_PRICE + " INTEGER, " +
+                COL_TIMESTAMP + " INTEGER DEFAULT CURRENT_TIMESTAMP)");
 
         // 초기 재고 입력
         insertInitialStock(db);
@@ -54,11 +76,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + ICE_CREAM_TABLE);
-        db.execSQL("DROP TABLE IF EXISTS " + TOPPING_TABLE);
-        db.execSQL("DROP TABLE IF EXISTS " + CUP_CONE_TABLE);
-        db.execSQL("DROP TABLE IF EXISTS " + ORDER_TABLE);
-        onCreate(db);
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE " + ORDER_TABLE + " ADD COLUMN " + COL_TIMESTAMP + " INTEGER DEFAULT CURRENT_TIMESTAMP");
+        }
     }
 
     // 초기 재고 입력
@@ -168,7 +188,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         orderValues.put(COL_TOPPING, topping);
         orderValues.put(COL_CUP_CONE, cupCone);
         orderValues.put(COL_PRICE, price);
+        orderValues.put(COL_TIMESTAMP, System.currentTimeMillis()); // 현재 시간 저장
         db.insert(ORDER_TABLE, null, orderValues);
+    }
+
+    // 특정 테이블의 모든 데이터 가져오기
+    public Cursor getAllData(String tableName) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.rawQuery("SELECT * FROM " + tableName, null);
     }
 
     // 재고 정보 가져오기 (주문 후 확인용)

@@ -3,7 +3,6 @@ package com.example.mimokioskapp;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.TextView;
@@ -11,47 +10,68 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-public class E_PaymentActivity extends Activity {
+public class E_PaymentActivity extends Activity implements ROSService.ROSListener {
 
     private RadioButton card_btn, app_btn;
     private TextView textPaymentAmount;
     private Button done;
     private String selectedFlavor = "";
+    private int totalPrice = 4000;
+    private ROSService rosService;
+    private int waitingTime = -1;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_e_payment);
 
+        // ROS 서비스 초기화
+        rosService = new ROSService(this);
+        rosService.setROSListener(this);
+
+        // 데이터 수신
         selectedFlavor = getIntent().getStringExtra("selectedFlavor");
-        if (selectedFlavor != null) {
-            Toast.makeText(this, "선택된 맛:" + selectedFlavor, Toast.LENGTH_SHORT).show();
-        }
+        totalPrice = getIntent().getIntExtra("totalPrice", 4000);
 
+        initUI();
+    }
 
+    private void initUI() {
         card_btn = findViewById(R.id.card_btn);
         app_btn = findViewById(R.id.app_btn);
-
         done = findViewById(R.id.done);
-
         textPaymentAmount = findViewById(R.id.textPaymentAmount);
 
-        Intent intent = getIntent();
-        int totalPrice = intent.getIntExtra("totalPrice", 4000); //기본값 4000원
-        textPaymentAmount.setText("결제 금액 : " + totalPrice + "원");
+        textPaymentAmount.setText("결제 금액: " + totalPrice + "원");
 
+        done.setOnClickListener(v -> {
+            String paymentData = "결제완료|맛:" + selectedFlavor + "|금액:" + totalPrice;
+            rosService.sendDataToROS2(paymentData);
+        });
+    }
 
-        done.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (card_btn.isChecked()) {
-                    Intent intent1 = new Intent(E_PaymentActivity.this, FinalActivity.class);
-                    intent1.putExtra("selectedFlavor", selectedFlavor);
-                    startActivity(intent);
-                }
+    @Override
+    public void onDataReceived(String data) {
+        runOnUiThread(() -> {
+            try {
+                waitingTime = Integer.parseInt(data.trim());
+                goToFinalScreen();
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "대기시간 수신 실패", Toast.LENGTH_SHORT).show();
             }
         });
+    }
 
+    private void goToFinalScreen() {
+        Intent intent = new Intent(this, FinalActivity.class);
+        intent.putExtra("selectedFlavor", selectedFlavor);
+        intent.putExtra("waitingTime", waitingTime);
+        startActivity(intent);
+    }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        rosService.closeConnection();
     }
 }

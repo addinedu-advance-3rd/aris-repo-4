@@ -2,9 +2,17 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
+    android:background="@color/pink1"
     android:gravity="center"
-    android:background="@color/pink1">
+    android:orientation="vertical">
+
+    <Button
+        android:id="@+id/admin_mode_btn"
+        android:layout_width="169dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:text="관리자모드"
+        android:onClick="showAdminPasswordDialog"/>
 
     <ToggleButton
         android:id="@+id/language_btn"
@@ -21,17 +29,17 @@
         android:id="@+id/recognized_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="음성"/>
+        android:text="음성" />
 
     <TextView
         android:id="@+id/waiting_text"
-        android:textColor="@color/black"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="음성 인식 또는 터치로 주문을 시작하세요"
-        android:textSize="18sp"
         android:layout_marginBottom="30dp"
-        android:gravity="center"/>
+        android:gravity="center"
+        android:text="음성 인식 또는 터치로 주문을 시작하세요"
+        android:textColor="@color/black"
+        android:textSize="18sp" />
 
     <FrameLayout
         android:id="@+id/touch_area"

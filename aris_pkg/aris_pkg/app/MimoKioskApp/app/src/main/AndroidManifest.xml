@@ -55,6 +55,10 @@
         <activity
             android:name=".FinalActivity"
             android:label="마무리 화면" />
+        <activity
+            android:name=".AdminActivity"
+            android:label="관리자 모드 화면"/>
+
     </application>
 
 </manifest>

@@ -78,10 +78,10 @@ public class D_ToppingActivity extends AppCompatActivity {
     private void saveOrderToDatabase(String flavor, String toppings) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         ContentValues values = new ContentValues();
-        values.put(DatabaseHelper.COLUMN_FLAVOR, flavor);
-        values.put(DatabaseHelper.COLUMN_TOPPINGS, toppings);
-        values.put(DatabaseHelper.COLUMN_CUPCONE, cupcone);
-        values.put(DatabaseHelper.COLUMN_PRICE, totalPrice);
+        values.put(DatabaseHelper.COL_FLAVOR, flavor);
+        values.put(DatabaseHelper.COL_TOPPING, toppings);
+        values.put(DatabaseHelper.COL_CUP_CONE, cupcone);
+        values.put(DatabaseHelper.COL_PRICE, totalPrice);
         values.put(DatabaseHelper.COLUMN_TIMESTAMP, System.currentTimeMillis());
 
         try {
