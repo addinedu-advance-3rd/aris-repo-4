@@ -46,6 +46,8 @@ class ToppingMain(object):
         self._funcs = {}
         self._robot_init()
 
+
+
     def _robot_init(self):
         """로봇 초기화"""
         self._arm.clean_warn()

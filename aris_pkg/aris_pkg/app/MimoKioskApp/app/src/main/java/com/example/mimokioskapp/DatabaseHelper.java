@@ -37,11 +37,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static String COLUMN_PRICE;
     public static String COLUMN_TIMESTAMP;
 
-    private ROSService rosService;
+    //private ROSService rosService;
 
     public DatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, 1);
-        rosService = new ROSService(context); // ROSService 초기화
+        //rosService = new ROSService(context); // ROSService 초기화
     }
 
     @Override
@@ -85,11 +85,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     private void insertInitialStock(SQLiteDatabase db) {
         // 아이스크림 재고 입력 (딸기, 블루베리)
         ContentValues flavorValues = new ContentValues();
-        flavorValues.put("flavor", "딸기");
+        flavorValues.put("flavor", "strawberry"); //원래 딸기로 되어있었음!!! 딸기->strawberry로 바꿔주세요!!
         flavorValues.put("stock", 100);  // 초기 재고 수량
         db.insert(ICE_CREAM_TABLE, null, flavorValues);
 
-        flavorValues.put("flavor", "블루베리");
+        flavorValues.put("flavor", "blueberry"); //원래 블루베리로 되어있었음!!! 블루베리->blueberry로 바꿔주세요!!
         db.insert(ICE_CREAM_TABLE, null, flavorValues);
 
         // 토핑 재고 입력 (죠리퐁, 코코볼, 해바라기씨)
@@ -105,12 +105,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.insert(TOPPING_TABLE, null, toppingValues);
 
         // 컵/콘 재고 입력
-        ContentValues cupConeValues = new ContentValues();
-        cupConeValues.put("cup_cone", "컵");
+        ContentValues cupConeValues = new ContentValues();//원래 컵으로 되어있었음!!! 컵-> cup로 바꿔주세요!!
+        cupConeValues.put("cup_cone", "cup");
         cupConeValues.put("stock", 100);
         db.insert(CUP_CONE_TABLE, null, cupConeValues);
 
-        cupConeValues.put("cup_cone", "콘");
+        cupConeValues.put("cup_cone", "cone"); //원래 콘으로 되어있었음!!! -> cone로 바꿔주세요!!
         db.insert(CUP_CONE_TABLE, null, cupConeValues);
     }
 
@@ -139,8 +139,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         saveOrder(db, flavor, topping, cupCone, totalPrice);
 
         // ROS2로 주문 정보 전송
-        String orderData = "Topping: " + topping + " Cup/Cone: " + cupCone;
-        rosService.sendDataToROS2(orderData);
+        //String orderData = "Topping: " + topping + " Cup/Cone: " + cupCone;
+        //rosService.sendDataToROS2(orderData);
     }
 
     // 재고 차감 메서드

@@ -31,7 +31,7 @@ from configparser import ConfigParser
 import rclpy
 from rclpy.node import Node
 from aris_pkg.main.main_module import ToppingMain 
-from std_msgs.msg import Int64, Bool, Int32MultiArray
+from std_msgs.msg import Int64, Bool, String
 from my_first_pkg_msgs.msg import OrderHistory
 from my_first_pkg_msgs.msg import AppOrder
 
@@ -40,13 +40,22 @@ class RobotArm(Node):
         super().__init__('aris_robot_arm')
         self.mode = 'start'
         arm = XArmAPI('192.168.1.192', baud_checkset=False)
+        try:
+            self._arm = arm
+            self._arm.connect()  # XArm 연결 시도
+            self.get_logger().info("Connected to XArm")
+        
+        except Exception as e:
+            self.get_logger().error(f"Error connecting to the arm: {str(e)}")
+            return 
+        
         self.mimo  = ToppingMain(arm)
         self.timer = self.create_timer(1.0, self.modes)
         self.before_mode = 'start'
-        
+             
         # Data validation flags
         self.order_check = []
-        self.capsule_check = 1
+        self.capsule_check = 0
         self.picandplace = True
         self.prohibit = True
         self.capsule_check = True
@@ -64,29 +73,59 @@ class RobotArm(Node):
             'cone': 0,
         }
 
-
        # 원래 False가 맞음 
         self.prohibit_flag = True
         self.order_check_flag = False
-        self.capsule_check_flag = True
+        self.capsule_check_flag = False
         self.pickandplace_flag = True
         self.capsuleholder_flag = True
         self.topping_flag = True
         self.cup_mode = 0
+
 
     #     # Subscribers
         self.prohibit_subscriber = self.create_subscription(Bool, '/robot_warning', self.prohibit_check_callback, 1)
         self.subscription = self.create_subscription(AppOrder,'/app_order', self.order_callback, 1)  # 수신할 토픽 이름self.listener_callback,
 
     
-    #     self.order_subscriber = self.create_subscription(Int32MultiArray, '/capsule_position', self.order_callback, 10)
+        self.order_subscriber = self.create_subscription(String, '/pit_status', self.capsule_callback, 10)
     #     self.capsule_subscriber = self.create_subscription(Int64, '/capsule_position', self.position_callback, 10)
     #     self.pickandplace_subscriber = self.create_subscription(bool, '/pickandplace', self.pickandplace_callback, 10)
     #     self.capsuleholder_subscriber = self.create_subscription(bool, '/caopsule_check', self.capsuleholder_callback, 10)
     #     self.topping_subscriber = self.create_subscription(Int64, '/topping_check', self.topping_check_callback, 10)
+    
+    def capsule_callback(self, msg):
+        capsule_num = msg.data
+        if capsule_num == '1':
+            self.capsule_check = 2
+            self.capsule_check_flag = True
+        
+        elif capsule_num == '2':
+            self.capsule_check = 1
+            self.capsule_check_flag = True
+        
+        elif capsule_num == '3':
+            self.capsule_check = 1
+            self.capsule_check_flag = True
 
- 
- 
+        elif capsule_num == '12':
+            self.capsule_check = 3
+            self.capsule_check_flag = True
+
+        elif capsule_num == '23':
+            self.capsule_check = 1
+            self.capsule_check_flag = True
+        
+        elif capsule_num == '13':
+            self.capsule_check = 2
+            self.capsule_check_flag = True
+        
+        elif capsule_num == '123':
+            self.capsule_check = 0 
+            self.capsule_check_flag = False
+        else:
+            self.capsule_check_flag = False
+
     def prohibit_check_callback(self, msg):
         print('11111111111111111111111111111')
         self.prohibit = msg.data
@@ -137,6 +176,7 @@ class RobotArm(Node):
         print(f"inventory:{self.inventory_topping},{self.inventory_cup_cone}")
 
         self.order_check_flag = True
+
     # def position_callback(self, msg):
     #     self.capsule_check = msg.data
     #     self.capsule_check_flag = True
@@ -198,9 +238,15 @@ class RobotArm(Node):
     def prohibit_method(self):
         print(f"self.prohibit_flag:{self.prohibit_flag}")
         if self.prohibit_flag == False:
-            self.mimo.mode_prohibit_detection()
+            code = self._arm.set_state(3)
+            if not self.mimo._check_code(code, 'set_state'):
+                time.sleep(2)
             return
-
+        else:
+            code = self._arm.set_state(0)
+            if not self.mimo._check_code(code, 'set_state'):
+                return
+            
     def mode_initialize(self):
         self.prohibit_method()
                 
@@ -243,7 +289,7 @@ class RobotArm(Node):
             self.mode = 'wait'
             self.before_mode = 'check_motion'
             return
-        
+        print(f"self_capsule_position:{self.capsule_check}")
         if self.cup_mode == 1: 
             self.mimo.dispenser_moveright()
         
@@ -412,6 +458,7 @@ class RobotArm(Node):
         self.topping_flag = False
         self.topping_mode = 1
         self.cup_mode = 0
+        self.capsule_position = 0
 
     def motion_following(self):
         print('와 신난다')

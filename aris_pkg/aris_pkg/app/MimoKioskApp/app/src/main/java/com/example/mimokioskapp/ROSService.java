@@ -2,6 +2,7 @@ package com.example.mimokioskapp;
 
 import android.content.Context;
 import android.util.Log;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -9,13 +10,14 @@ import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ROSService {
+public class ROSService{
     private static final String TAG = "ROSService";
 
     //private static final String ROS2_IP = "192.168.219.184";
-    private static final String ROS2_IP = "192.168.0.61";
-    private static final int ROS2_PORT = 6789;
-
+    //private static final String ROS2_IP = "192.168.0.61";
+    //private static final String ROS2_IP = "192.168.0.56";
+    private static final String ROS2_IP = "192.168.0.37";
+    private static final int ROS2_PORT_ORDER = 6789;
     private Socket socket;
     private OutputStream outputStream;
     private InputStream inputStream;
@@ -34,7 +36,7 @@ public class ROSService {
     private void connect() {
         executor.execute(() -> {
             try {
-                socket = new Socket(ROS2_IP, ROS2_PORT);
+                socket = new Socket(ROS2_IP, ROS2_PORT_ORDER);
                 outputStream = socket.getOutputStream();
                 inputStream = socket.getInputStream();
                 startListening();

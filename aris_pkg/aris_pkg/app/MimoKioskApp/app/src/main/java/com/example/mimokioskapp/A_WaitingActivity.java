@@ -1,7 +1,7 @@
 package com.example.mimokioskapp;
 
-import android.app.AlertDialog;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaPlayer;
@@ -12,11 +12,12 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
-import android.widget.EditText;
 
 import androidx.annotation.Nullable;
 
@@ -29,12 +30,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class A_WaitingActivity extends Activity {
+    private static final String ROS2_IP = "192.168.0.37";
+    private static final int ROS2_PORT_VOICE = 8888;
+    private Socket socket;
+    private OutputStream outputStream;
+    private InputStream inputStream;
     private static final String TAG = "A_WaitingActivity"; // 로그 태그
     private static final String CLIENT_ID = "a4zgp0vwh8"; // 네이버 클라이언트 ID
     private static final String CLIENT_SECRET = "IB5GVyMe4O255EB2u61vHfZMla9GVZ87GcWEuMhW"; // 네이버 클라이언트 Secret
@@ -47,6 +56,7 @@ public class A_WaitingActivity extends Activity {
     private FrameLayout touch_area;
     private TextView waiting_text;
     private TextView recognized_text;
+    private ExecutorService executor;
     private boolean isListening = false;
 
     private SpeechRecognizer speechRecognizer;
@@ -56,10 +66,19 @@ public class A_WaitingActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_waiting);
 
+        executor = Executors.newFixedThreadPool(2);
+
         touch_area = findViewById(R.id.touch_area);
         language_btn = findViewById(R.id.language_btn);
         waiting_text = findViewById(R.id.waiting_text);
         recognized_text = findViewById(R.id.recognized_text);
+        Button voiceServiceButton = findViewById(R.id.voice_service_btn);
+        voiceServiceButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showVoiceServiceDialog();
+            }
+        });
 
         // TTS 초기화 및 환영 메시지 출력
         new TTSAsyncTask().execute(languageMode.equals("ko") ? "어서 오세요. 주문을 시작하려면 화면을 터치하거나 음성으로 말씀해주세요." : "Welcome. Please touch the screen or speak to start your order.");
@@ -90,6 +109,38 @@ public class A_WaitingActivity extends Activity {
         touch_area.setOnClickListener(v -> goToNextScreen());
     }
 
+    private void showVoiceServiceDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setMessage("음성 서비스로 주문하시겠습니까?")
+                .setPositiveButton("확인", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String data="True";
+                        executor.execute(() -> {
+                            try {
+                                socket = new Socket(ROS2_IP, ROS2_PORT_VOICE);
+                                outputStream = socket.getOutputStream();
+                                inputStream = socket.getInputStream();
+                                if (outputStream != null) {
+                                    outputStream.write(data.getBytes());
+                                    outputStream.flush();
+                                    Log.d(TAG, "전송 성공: " + data);
+                                }
+                                if (outputStream != null) outputStream.close();
+                                if (inputStream != null) inputStream.close();
+                                if (socket != null) socket.close();
+                                executor.shutdown();
+                            } catch (IOException e) {
+                                Log.e(TAG, "ROS 연결 실패: " + e.getMessage());
+                            }
+                        });
+                        Intent intent = new Intent(A_WaitingActivity.this, FinalActivity.class);
+                        startActivity(intent);
+                    }
+                })
+                .setNegativeButton("취소", null)
+                .show();
+    }
     private class TTSAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... params) {

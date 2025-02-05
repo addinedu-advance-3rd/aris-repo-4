@@ -17,7 +17,7 @@ public class E_PaymentActivity extends Activity implements ROSService.ROSListene
     private Button done;
     private String selectedFlavor = "";
     private int totalPrice = 4000;
-    private ROSService rosService;
+    //private ROSService rosService;
     private int waitingTime = -1;
 
     @Override
@@ -26,8 +26,8 @@ public class E_PaymentActivity extends Activity implements ROSService.ROSListene
         setContentView(R.layout.activity_e_payment);
 
         // ROS 서비스 초기화
-        rosService = new ROSService(this);
-        rosService.setROSListener(this);
+
+        //rosService.setROSListener(this);
 
         // 데이터 수신
         selectedFlavor = getIntent().getStringExtra("selectedFlavor");
@@ -46,7 +46,8 @@ public class E_PaymentActivity extends Activity implements ROSService.ROSListene
 
         done.setOnClickListener(v -> {
             String paymentData = "결제완료|맛:" + selectedFlavor + "|금액:" + totalPrice;
-            rosService.sendDataToROS2(paymentData);
+
+            goToFinalScreen(); //이거 한줄만 추가하면됨!!
         });
     }
 
@@ -72,6 +73,6 @@ public class E_PaymentActivity extends Activity implements ROSService.ROSListene
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        rosService.closeConnection();
+
     }
 }

@@ -82,7 +82,7 @@ public class D_ToppingActivity extends AppCompatActivity {
         values.put(DatabaseHelper.COL_TOPPING, toppings);
         values.put(DatabaseHelper.COL_CUP_CONE, cupcone);
         values.put(DatabaseHelper.COL_PRICE, totalPrice);
-        values.put(DatabaseHelper.COLUMN_TIMESTAMP, System.currentTimeMillis());
+        values.put(DatabaseHelper.COL_TIMESTAMP, System.currentTimeMillis());
 
         try {
             long result = db.insert(DatabaseHelper.ORDER_TABLE, null, values);
@@ -184,6 +184,8 @@ public class D_ToppingActivity extends AppCompatActivity {
         String toppings = getSelectedToppings();
         saveOrderToDatabase(selectedFlavor, toppings);
         if (rosService != null) {
+            String orderData = "Topping: " + toppings + " Cup/Cone: " + cupcone;
+            rosService.sendDataToROS2(orderData);
             dbHelper.processOrder(
                     selectedFlavor,
                     toppings,
