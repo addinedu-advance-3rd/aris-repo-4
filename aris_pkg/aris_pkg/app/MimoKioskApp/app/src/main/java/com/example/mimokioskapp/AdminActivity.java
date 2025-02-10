@@ -1,7 +1,9 @@
 package com.example.mimokioskapp;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -12,6 +14,7 @@ public class AdminActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
     private TextView tvInventoryData;
     private TableLayout orderTable;
+    private Button exit_btn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,10 +24,18 @@ public class AdminActivity extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
         tvInventoryData = findViewById(R.id.tv_inventory_data);
         orderTable = findViewById(R.id.order_table);
+        exit_btn = findViewById(R.id.exit_btn);
 
         // 데이터베이스 내용 가져와서 화면에 표시
         displayInventoryData();
         displayOrderTable();
+
+        //나가기 버튼
+        exit_btn.setOnClickListener(v -> {
+            Intent intent = new Intent(AdminActivity.this, A_WaitingActivity.class);
+            startActivity(intent);
+            finish();
+        });
     }
 
     private void displayInventoryData() {

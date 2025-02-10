@@ -32,8 +32,8 @@ import rclpy
 from rclpy.node import Node
 from aris_pkg.main.main_module import ToppingMain 
 from std_msgs.msg import Int64, Bool, String
-from my_first_pkg_msgs.msg import OrderHistory
-from my_first_pkg_msgs.msg import AppOrder
+from my_first_pkg_msgs.msg import AppOrder, OrderHistory
+from my_first_pkg_msgs.srv import CapsulePosition
 
 class RobotArm(Node):
     def __init__(self):
@@ -58,7 +58,6 @@ class RobotArm(Node):
         self.capsule_check = 0
         self.picandplace = True
         self.prohibit = True
-        self.capsule_check = True
         self.topping_mode = 1
 
         self.inventory_topping = {
@@ -82,59 +81,140 @@ class RobotArm(Node):
         self.topping_flag = True
         self.cup_mode = 0
 
+        self.True_messege=True
 
     #     # Subscribers
-        self.prohibit_subscriber = self.create_subscription(Bool, '/robot_warning', self.prohibit_check_callback, 1)
+        self.prohibit_subscriber = self.create_subscription(Bool, '/warning', self.prohibit_check_callback, 1)
         self.subscription = self.create_subscription(AppOrder,'/app_order', self.order_callback, 1)  # 수신할 토픽 이름self.listener_callback,
+        
+        self.cli = self.create_client(CapsulePosition, '/process_order')
 
-    
-        self.order_subscriber = self.create_subscription(String, '/pit_status', self.capsule_callback, 10)
+        #while not self.cli.wait_for_service(timeout_sec=1.0):
+           # self.get_logger().info('서비스가 사용 가능할 때까지 대기 중...')
+        
+        #self.request = CapsulePosition.Request()   
+        #self.order_subscriber = self.create_subscription(String, '/pit_status', self.capsule_callback, 10)
+
     #     self.capsule_subscriber = self.create_subscription(Int64, '/capsule_position', self.position_callback, 10)
     #     self.pickandplace_subscriber = self.create_subscription(bool, '/pickandplace', self.pickandplace_callback, 10)
     #     self.capsuleholder_subscriber = self.create_subscription(bool, '/caopsule_check', self.capsuleholder_callback, 10)
     #     self.topping_subscriber = self.create_subscription(Int64, '/topping_check', self.topping_check_callback, 10)
+
+    def request_capsule_status(self):
+        self.get_logger().info("🟡 Sending service request...")
+        
+        request = CapsulePosition.Request()
+        request.req = self.True_messege
+
+        future = self.cli.call_async(request)
+
+        # 새로운 쓰레드에서 spin_until_future_complete 실행
+        spin_thread = threading.Thread(target=self.spin_in_thread, args=(future,))
+        spin_thread.start()
+
+    def spin_in_thread(self, future):
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        
+        if future.done():
+            try:
+                capsule_status = future.result()
+                self.get_logger().info(f"✅ Received response: {capsule_status.message}")
+                self.interpret_capsule_status(capsule_status.message)
+            except Exception as e:
+                self.get_logger().error(f"❌ Service call failed: {str(e)}")
+
+    # def request_capsule_status(self):
+
+        
+    #     self.get_logger().info("🟡 Sending service request...")
     
-    def capsule_callback(self, msg):
-        capsule_num = msg.data
-        if capsule_num == '1':
-            self.capsule_check = 2
-            self.capsule_check_flag = True
-        
-        elif capsule_num == '2':
-            self.capsule_check = 1
-            self.capsule_check_flag = True
-        
-        elif capsule_num == '3':
-            self.capsule_check = 1
-            self.capsule_check_flag = True
+    #     request = CapsulePosition.Request()
+    #     request.req = self.True_messege
 
-        elif capsule_num == '12':
+    #     future = self.cli.call_async(request)
+    #     future.add_done_callback(self.response_callback)
+
+    # def response_callback(self, future):
+    #     try:
+    #         response = future.result()
+    #         print(future.result())
+    #         self.get_logger().info(f"✅ Received response: {response.message}")
+    #         self.interpret_capsule_status(response.message)
+    #     except Exception as e:
+    #         self.get_logger().error(f"❌ Service call failed: {str(e)}")
+        
+  
+
+    def interpret_capsule_status(self, capsule_status):
+        """ 캡슐 상태 해석 및 플래그 설정 """
+        if capsule_status == '101':
+            self.capsule_check = 2
+        elif capsule_status == '011':
+            self.capsule_check = 1
+        elif capsule_status == '110':
             self.capsule_check = 3
-            self.capsule_check_flag = True
-
-        elif capsule_num == '23':
+        elif capsule_status in ['001', '010']:
             self.capsule_check = 1
-            self.capsule_check_flag = True
-        
-        elif capsule_num == '13':
+        elif capsule_status in ['100']:
             self.capsule_check = 2
-            self.capsule_check_flag = True
-        
-        elif capsule_num == '123':
-            self.capsule_check = 0 
+        elif capsule_status == '111':
+            self.capsule_check = 0
             self.capsule_check_flag = False
+            return
         else:
             self.capsule_check_flag = False
+            return
 
-    def prohibit_check_callback(self, msg):
-        print('11111111111111111111111111111')
-        self.prohibit = msg.data
-        if msg.data == False:
-            self.prohibit_flag = False
-        else:
-            self.prohibit_flag = True
+        self.capsule_check_flag = True
+        self.get_logger().info(f"✅ Capsule detected at position: {self.capsule_check}")
+
+    # def capsule_callback(self, msg):
+    #     capsule_num = msg.data
+    #     if capsule_num == '101':
+    #         self.capsule_check = 2
+    #         self.capsule_check_flag = True
         
-        self.prohibit_flag = False
+    #     elif capsule_num == '011':
+    #         self.capsule_check = 1
+    #         self.capsule_check_flag = True
+        
+    #     elif capsule_num == '110':
+    #         self.capsule_check = 3
+    #         self.capsule_check_flag = True
+
+    #     elif capsule_num == '001':
+    #         self.capsule_check = 1
+    #         self.capsule_check_flag = True
+
+    #     elif capsule_num == '100':
+    #         self.capsule_check =2
+    #         self.capsule_check_flag = True
+        
+    #     elif capsule_num == '010':
+    #         self.capsule_check = 1
+    #         self.capsule_check_flag = True
+        
+    #     elif capsule_num == '111':
+    #         self.capsule_check = 0 
+    #         self.capsule_check_flag = False
+        
+    #     else:
+    #         self.capsule_check_flag = False
+    #     print(f"self,capsule_check:{self.capsule_check_flag}")
+
+    
+    def prohibit_check_callback(self, msg):
+        """ 접근 감지 콜백: 감지 즉시 로봇 정지 """
+        self.prohibit = msg.data
+        if msg.data is True:  # 접근 감지 발생
+            self.get_logger().warn("접근 감지! 즉시 정지합니다.")
+            self._arm.set_state(3)  # XArm 정지
+            self.mode = 'stop'  # 현재 모드 강제 중지
+        else:
+            code = self._arm.set_state(0)
+            if not self.mimo._check_code(code, 'set_state'):
+                return
+
     
     
     def order_callback(self, msg):
@@ -248,7 +328,7 @@ class RobotArm(Node):
                 return
             
     def mode_initialize(self):
-        self.prohibit_method()
+        # self.prohibit_method()
                 
         self.get_logger().info("초기 위치로 이동")
         self.mimo.connect_machine()
@@ -281,9 +361,12 @@ class RobotArm(Node):
             
 
     def mode_check_motion(self):
-        self.prohibit_method()
-        
+        #self.prohibit_method()
+        print('2222222222222')
         self.get_logger().info("캡슐 놓여져 있는 위치 확인")
+        print('1111111111111')
+        self.request_capsule_status()
+        print('3333333333333')
         if not self.capsule_check_flag:
             self.get_logger().error("Capsule position data not received. Cannot check motion.")
             self.mode = 'wait'
@@ -321,7 +404,7 @@ class RobotArm(Node):
 
             
     def mode_verify_grasp(self):
-        self.prohibit_method()
+        #self.prohibit_method()
         
         self.get_logger().info("물체 제대로 잡았는 지 확인")            
         
@@ -339,7 +422,7 @@ class RobotArm(Node):
             self.handle_grasp_failure()
 
     def mode_move_to_holder(self):
-        self.prohibit_method()
+        #self.prohibit_method()
         
         self.get_logger().info("캡슐 홀더로 이동")
         if not self.capsuleholder_flag:
@@ -368,7 +451,7 @@ class RobotArm(Node):
             self.handle_move_failure()
 
     def mode_dispense_cup(self):
-        self.prohibit_method()
+        #self.prohibit_method()
 
         self.get_logger().info("컵 디스펜서로 이동")
         
@@ -388,7 +471,7 @@ class RobotArm(Node):
             self.handle_dispense_failure()
 
     def mode_dispense_ice_cream(self):
-        self.prohibit_method()
+        #self.prohibit_method()
 
         self.get_logger().info("아이스크림 디스펜서로 이동")
         if self.cup_mode == 1:
@@ -407,7 +490,7 @@ class RobotArm(Node):
             self.handle_ice_cream_failure()
 
     def mode_add_topping(self):
-        self.prohibit_method()
+        #self.prohibit_method()
         
         self.get_logger().info("아이스크림 위에 토핑 받기")
         if not self.topping_flag:
@@ -430,7 +513,7 @@ class RobotArm(Node):
             self.handle_topping_failure()
 
     def mode_finalize(self):
-        self.prohibit_method()
+        #self.prohibit_method()
         
         self.get_logger().info("Process complete. Returning to initial position...")
         if self.cup_mode == 1:         

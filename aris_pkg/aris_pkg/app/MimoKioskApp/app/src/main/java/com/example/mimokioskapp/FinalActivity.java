@@ -19,6 +19,9 @@ public class FinalActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_final);
+
+        long orderEndTime = System.currentTimeMillis();
+        new DatabaseHelper(this).calculateOrderDuration(orderEndTime);
         final_text= findViewById(R.id.final_text);
         order_number = findViewById(R.id.order_number);
         time_text = findViewById(R.id.time_text);

@@ -16,6 +16,7 @@
 #   2. cd xArm-Python-SDK
 #   3. python setup.py install
 """
+
 import sys
 import math
 import time
@@ -29,93 +30,83 @@ from xarm.wrapper import XArmAPI
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Pose
-from moveit_msgs.msg import MotionPlanRequest, RobotTrajectory, Constraints, PositionConstraint, OrientationConstraint, BoundingVolume
-from moveit_msgs.srv import GetMotionPlan
+from moveit_msgs.msg import (MotionPlanRequest, RobotTrajectory, Constraints,
+                             PositionConstraint, OrientationConstraint, BoundingVolume)
+# MoveIt2의 Cartesian path planning 서비스를 사용 (ROS 메시지 타입은 환경에 따라 다를 수 있음)
+from moveit_msgs.srv import GetMotionPlan, GetCartesianPath
 from moveit_msgs.action import ExecuteTrajectory
 from rclpy.action import ActionClient
 from action_msgs.msg import GoalStatus
 from shape_msgs.msg import SolidPrimitive
 from sensor_msgs.msg import JointState
+# tf_transformations 대신 scipy를 사용하여 Euler -> quaternion 변환
+from scipy.spatial.transform import Rotation as R
+
+import numpy as np
+from copy import deepcopy
+from builtin_interfaces.msg import Duration
 
 
 class MoveGroupClient(Node):
     def __init__(self):
         super().__init__('move_group_client')
-        self.mode = 'start'
-        self.arm = None 
+        self.arm = None
+
+        # Action Client 생성 (trajectory 실행)
         self._action_client = ActionClient(self, ExecuteTrajectory, '/execute_trajectory')
+        # MotionPlan 서비스를 위한 클라이언트 (필요시 사용)
         self._planning_client = self.create_client(GetMotionPlan, '/plan_kinematic_path')
+        # Cartesian path planning 서비스를 위한 클라이언트 생성
+        self._cartesian_client = self.create_client(GetCartesianPath, '/compute_cartesian_path')
 
         try:
             arm = XArmAPI('192.168.1.192', baud_checkset=False)
             self._arm = arm
-            self._arm.connect()  # XArm 연결 시도
+            self._arm.connect()  # xArm 연결 시도
             self.get_logger().info("Connected to XArm")
-        
         except Exception as e:
             self.get_logger().error(f"Error connecting to the arm: {str(e)}")
-            return            
-        
-    def create_pose_constraint(self, pose):
-        constraints = Constraints()
+            return
 
-        # 🔹 PositionConstraint 생성
-        position_constraint = PositionConstraint()
-        position_constraint.header.frame_id = "world"  # 기준 좌표계
-        position_constraint.link_name = "link6"  # 제약을 적용할 링크
+    def compute_cartesian_path(self, waypoints, eef_step=0.001, jump_threshold=0.0):
+        """
+        Cartesian 경로 계획을 수행하는 함수.
+        :param waypoints: 이동할 waypoint의 리스트 (Pose 객체 리스트)
+        :param eef_step: 엔드 이펙터의 step 크기 (m)
+        :param jump_threshold: 점프 임계값 (0.0이면 사용 안함)
+        :return: (계획된 trajectory (RobotTrajectory), 성공 fraction)
+        """
+        if not self._cartesian_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("Cartesian path planning 서비스가 사용 가능하지 않습니다.")
+            return None, 0.0
 
-        # BoundingVolume 생성
-        bounding_volume = BoundingVolume()
-        primitive = SolidPrimitive()
-        primitive.type = SolidPrimitive.SPHERE  # 구형 제약 설정
-        primitive.dimensions = [0.01]  # 허용 반경 (1cm)
+        request = GetCartesianPath.Request()
+        request.group_name = "lite6"
+        request.link_name = "link6"
+        request.waypoints = waypoints
+        request.max_step = eef_step
+        request.jump_threshold = jump_threshold
+        # 필요에 따라 아래 옵션도 설정할 수 있음
+        # request.avoid_collisions = True
 
-        bounding_volume.primitives.append(primitive)
-        bounding_volume.primitive_poses.append(pose)  # Pose 객체 그대로 추가
-
-        position_constraint.constraint_region = bounding_volume
-        position_constraint.weight = 1.0
-
-        # 🔹 OrientationConstraint 생성
-        orientation_constraint = OrientationConstraint()
-        orientation_constraint.header.frame_id = "world"
-        orientation_constraint.link_name = "link6"
-        orientation_constraint.orientation = pose.orientation
-        orientation_constraint.absolute_x_axis_tolerance = 0.1
-        orientation_constraint.absolute_y_axis_tolerance = 0.1
-        orientation_constraint.absolute_z_axis_tolerance = 0.1
-        orientation_constraint.weight = 1.0
-
-        # 🔹 Constraints에 추가
-        constraints.position_constraints.append(position_constraint)
-        constraints.orientation_constraints.append(orientation_constraint)
-
-        return constraints
-
-    def compute_motion_plan(self, target_pose):
-        if not self._planning_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("Planning service not available")
-            return None
-
-        request = GetMotionPlan.Request()
-        request.motion_plan_request.group_name = "lite6"
-        request.motion_plan_request.goal_constraints.append(
-            self.create_pose_constraint(target_pose)
-        )
-
-        future = self._planning_client.call_async(request)
+        future = self._cartesian_client.call_async(request)
         rclpy.spin_until_future_complete(self, future)
-        if future.result() and future.result().motion_plan_response.trajectory:
-            return future.result().motion_plan_response.trajectory
+        if future.result():
+            response = future.result()
+            self.get_logger().info(f"Cartesian path planning 완료: fraction = {response.fraction}")
+            return response.solution, response.fraction
         else:
-            self.get_logger().error("Motion planning failed")
-            return None
+            self.get_logger().error("Cartesian path planning 실패")
+            return None, 0.0
 
     def send_goal(self, trajectory):
+        """
+        계산된 trajectory를 실행하는 함수.
+        """
         if trajectory is None:
-            self.get_logger().error("No valid trajectory to execute")
+            self.get_logger().error("실행할 유효한 trajectory가 없습니다.")
             return
-        
+
         goal_msg = ExecuteTrajectory.Goal()
         goal_msg.trajectory = trajectory
 
@@ -138,33 +129,76 @@ class MoveGroupClient(Node):
             self.get_logger().info('Goal succeeded')
         else:
             self.get_logger().info(f'Goal failed with status: {goal_handle.status}')
-    
+
     def get_current_pose(self):
+        """
+        현재 xArm의 pose를 가져오는 함수.
+        """
         status_code, position = self._arm.get_position()
         x, y, z, roll, pitch, yaw = position
-        return [x, y, z]
+        roll, pitch, yaw = 180.0, 90.0, 0.0
+        # Pose 객체 생성 (x, y, z는 mm 단위를 m로 변환)
+        pose = Pose()
+        pose.position.x = x / 1000.0
+        pose.position.y = y / 1000.0
+        pose.position.z = z / 1000.0
+        # Euler 각도를 quaternion으로 변환 (scipy 사용)
+        r = R.from_euler('xyz', [roll, pitch, yaw], degrees=True)
+
+        quaternion = r.as_quat()  # 반환 순서는 [x, y, z, w]
+        pose.orientation.x = quaternion[0]
+        pose.orientation.y = quaternion[1]
+        pose.orientation.z = quaternion[2]
+        pose.orientation.w = quaternion[3]
+        return pose
+
 
 def main(args=None):
     rclpy.init(args=args)
     move_group_client = MoveGroupClient()
-    current_pose = move_group_client.get_current_pose()
-    current_position_x = current_pose[0]
-    current_position_y = current_pose[1]
-    current_position_z = current_pose[2]
-    target_pose = Pose()
-    target_pose.position.x = current_position_x + 0.3  # 로봇 팔이 이동할 수 있는 범위 내
-    target_pose.position.y = current_position_y
-    target_pose.position.z = current_position_z # 너무 높지 않게 설정
 
-    target_pose.orientation.w = 1.0
+    # 현재 xArm의 Pose를 가져옴
+    start_pose = move_group_client.get_current_pose()
+    move_group_client.get_logger().info(f"현재 Pose: {start_pose}")
 
-    planned_trajectory = move_group_client.compute_motion_plan(target_pose)
-    print(f'planned_trajectory:{planned_trajectory}')
-    move_group_client.send_goal(planned_trajectory)
+    # # Cartesian 경로 planning을 위한 waypoint 설정
+    # # 예제: 현재 위치에서 x축 방향으로 0.1m (10cm) 전진하는 경로
+    # waypoints = []
+    # waypoints.append(deepcopy(start_pose))  # 시작점
+
+    # target_pose = deepcopy(start_pose)
+    # target_pose.position.x += 0.1  # x축 방향으로 0.1m 전진
+    # waypoints.append(deepcopy(target_pose))
+    
+    # 현재 pose에서 x축 방향으로 0.1m 전진하는 단순 경로 대신
+    # 중간 waypoint를 추가하여 3개의 waypoint로 구성
+    waypoints = []
+    start_pose = deepcopy(move_group_client.get_current_pose())
+    waypoints.append(start_pose)
+
+    # 중간 waypoint (x축으로 0.05m 전진)
+    mid_pose = deepcopy(start_pose)
+    mid_pose.position.x += 0.05
+    waypoints.append(mid_pose)
+
+    # 최종 목표 (x축으로 0.1m 전진)
+    target_pose = deepcopy(start_pose)
+    target_pose.position.x -= 0.1
+    waypoints.append(target_pose)
+
+    # computeCartesianPath() 호출
+    trajectory, fraction = move_group_client.compute_cartesian_path(waypoints, eef_step=0.001, jump_threshold=0.0)
+    print(f"trajectory:{trajectory}")
+    if trajectory is not None:
+        move_group_client.get_logger().info("Cartesian 경로 planning 성공, trajectory 실행합니다.")
+        move_group_client.send_goal(trajectory)
+    else:
+        move_group_client.get_logger().error("Cartesian 경로 planning 실패, trajectory 실행하지 않습니다.")
 
     rclpy.spin(move_group_client)
     move_group_client.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

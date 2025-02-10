@@ -32,6 +32,8 @@ class Follow(Node):
         self.delta_x = msg.x  # delta_x 값 업데이트
         self.delta_y = msg.y  # delta_y 값 업데이트
         self.distance = msg.dis # distance update
+        self.gripper  = msg.gripper
+        
         self.get_logger().info(f"Received delta_x: {self.delta_x}, delta_y: {self.delta_y}, distance : {self.distance}")  # f-string 수정
         self.move_robot()  # 메시지 수신 후 로봇 이동 함수 호출
 
@@ -40,7 +42,7 @@ class Follow(Node):
         leftright_flag, updown_flag, distance_flag = 0,0,0
         leftright = self.delta_x  # delta_x 값 업데이트
         updown = self.delta_y  # delta_y 값 업데이트
-        dis = self.distance
+        gripper = self.gripper
         if leftright > 5:
             leftright_flag = -1
         elif leftright < -5:
@@ -50,38 +52,69 @@ class Follow(Node):
         elif updown < -5:
             updown_flag = -1 
         
-        if dis > 50:
+        if gripper == False:
             distance_flag = 1
         return leftright_flag, updown_flag, distance_flag
 
 
+    def move_robot(self):
+        """로봇을 delta 값에 따라 움직이는 함수"""
+        if not self.is_alive:
+            self.get_logger().warn("Robot is not alive. Aborting move.")
+            return
+        leftright, updown, gripper =  self.set_direction()
+        
+        # a = self._arm.get_position()
+        # print(f"position:{a}")
+        # print(f"left : {leftright} , right: {updown}")
+        # print(f"len:{len(a[1])}")   
+        # b, angle = self._arm.get_inverse_kinematics(a[1], input_is_radian=None, return_is_radian=None)
+        # print(f"angle:{angle}")
+
+        # b, angle = self._arm.get_joint_states()  
+        # print(f"angle:{angle}")
+
+        
+        # # Apply range constraints to delta_x and delta_y
+        # self.delta_x = max(-10, min(10, self.delta_x))
+        # self.delta_y = max(-10, min(10, self.delta_y))
+
+        # You can also apply constraints to z if needed (e.g., for z axis, set delta_z to a similar value)
+
+        # code = self._arm.set_position(*[leftright, updown, 0.0, 0.0, 0.0, 0.0], speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=False)
+        # if not self._check_code(code, 'set_init_point'):
+        #     return
+
+        print(f"gripper: {gripper}")
+        if gripper == 1:
+            code = self._arm.open_lite6_gripper()
+            #self._arm.set_pause_time(2) 
+        
+        elif gripper == 0:
+            code = self._arm.close_lite6_gripper()
+            # self._arm.set_pause_time(2)           
+        
+        ## 가까워질때 
+        if self.dis == 0:
+            code = self._arm.set_position(x=leftright*5 ,y=-3, z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
+            if not self._check_code(code, 'set_position'):
+                return
+        ## 멀어질때 
+        elif self.dis == 1:
+            code = self._arm.set_position(x=leftright*5 ,y=3, z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
+            if not self._check_code(code, 'set_position'):
+                return
+        else:
+            code = self._arm.set_position(x=leftright*5 ,z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
+            if not self._check_code(code, 'set_position'):
+                return
+    
     # def move_robot(self):
     #     """로봇을 delta 값에 따라 움직이는 함수"""
     #     if not self.is_alive:
     #         self.get_logger().warn("Robot is not alive. Aborting move.")
     #         return
     #     leftright, updown, gripper =  self.set_direction()
-        
-    #     # a = self._arm.get_position()
-    #     # print(f"position:{a}")
-    #     # print(f"left : {leftright} , right: {updown}")
-    #     # print(f"len:{len(a[1])}")   
-    #     # b, angle = self._arm.get_inverse_kinematics(a[1], input_is_radian=None, return_is_radian=None)
-    #     # print(f"angle:{angle}")
-
-    #     # b, angle = self._arm.get_joint_states()  
-    #     # print(f"angle:{angle}")
-
-        
-    #     # # Apply range constraints to delta_x and delta_y
-    #     # self.delta_x = max(-10, min(10, self.delta_x))
-    #     # self.delta_y = max(-10, min(10, self.delta_y))
-
-    #     # You can also apply constraints to z if needed (e.g., for z axis, set delta_z to a similar value)
-
-    #     # code = self._arm.set_position(*[leftright, updown, 0.0, 0.0, 0.0, 0.0], speed=self._tcp_speed, mvacc=self._tcp_acc, radius=0.0, wait=False)
-    #     # if not self._check_code(code, 'set_init_point'):
-    #     #     return
 
 
     #     print(f"gripper: {gripper}")
@@ -92,37 +125,15 @@ class Follow(Node):
     #     elif gripper == 0:
     #         code = self._arm.close_lite6_gripper()
     #         # self._arm.set_pause_time(2)           
-
-    #     code = self._arm.set_position(x=leftright*5 ,z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
-    #     if not self._check_code(code, 'set_position'):
-    #        return
-       
-
-    def move_robot(self):
-        """로봇을 delta 값에 따라 움직이는 함수"""
-        if not self.is_alive:
-            self.get_logger().warn("Robot is not alive. Aborting move.")
-            return
-        leftright, updown, gripper =  self.set_direction()
-
-
-        print(f"gripper: {gripper}")
-        if gripper == 1:
-            code = self._arm.open_lite6_gripper()
-            #self._arm.set_pause_time(2) 
+    #     if self.start_flag == True:
+    #         ret1, self.current_position = self._arm.get_position(is_radian=None)
+    #         self.start_flag = False
+    #     future_position = copy.deepcopy(self.current_position)
         
-        elif gripper == 0:
-            code = self._arm.close_lite6_gripper()
-            # self._arm.set_pause_time(2)           
-        if self.start_flag == True:
-            ret1, self.current_position = self._arm.get_position(is_radian=None)
-            self.start_flag = False
-        future_position = copy.deepcopy(self.current_position)
-        
-        future_position[0] += leftright*5 
-        future_position[2] += updown*5
-        print("current_position", self.current_position)
-        print("future_position", future_position)
+    #     future_position[0] += leftright*5 
+    #     future_position[2] += updown*5
+    #     print("current_position", self.current_position)
+    #     print("future_position", future_position)
 
         #ret2, future_angle = self._arm.get_inverse_kinematics(future_position, input_is_radian=None, return_is_radian=None)
 

@@ -41,6 +41,7 @@ public class C_FlavorActivity extends AppCompatActivity {
     private ToggleButton language_btn;
     private ImageButton strawberry_btn, blueberry_btn;
     private TextView order_text;
+    private MediaPlayer mediaPlayer;
     private SpeechRecognizer speechRecognizer;
 
     @Override
@@ -100,7 +101,6 @@ public class C_FlavorActivity extends AppCompatActivity {
 
     private void handleFlavorSelection(String flavor) {
         selectedFlavor = flavor;
-        playSelectionConfirmationTTS();
         goToNextScreen();
     }
 
@@ -111,12 +111,6 @@ public class C_FlavorActivity extends AppCompatActivity {
         new TTSAsyncTask().execute(message);
     }
 
-    private void playSelectionConfirmationTTS() {
-        String message = languageMode.equals("ko") ?
-                (selectedFlavor.equals("strawberry") ? "딸기맛으로 선택하셨습니다." : "블루베리맛으로 선택하셨습니다.") :
-                (selectedFlavor.equals("strawberry") ? "You have chosen the strawberry flavor." : "You have chosen the blueberry flavor.");
-        new TTSAsyncTask().execute(message);
-    }
 
     private class TTSAsyncTask extends AsyncTask<String, Void, String> {
         @Override
@@ -175,7 +169,29 @@ public class C_FlavorActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            handleTTSResult(result);
+            super.onPostExecute(result);
+
+            // 결과 처리
+            if (result.endsWith(".mp3")) {
+                stopTTS();
+                // MP3 파일이 생성되었으므로 이를 재생하는 코드 추가
+                mediaPlayer = new MediaPlayer();
+                try {
+                    mediaPlayer.setDataSource(result); // 생성된 MP3 파일 경로를 전달
+                    mediaPlayer.prepare(); // 파일 준비
+                    mediaPlayer.start(); // 음성 재생 시작
+                    mediaPlayer.setOnCompletionListener(mp -> {
+                        mp.release();
+                        mediaPlayer = null;
+                    });
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(C_FlavorActivity.this, "음성 파일 재생 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            } else {
+                // 오류 메시지 처리
+                Toast.makeText(C_FlavorActivity.this, "TTS 오류: " + result, Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -193,6 +209,15 @@ public class C_FlavorActivity extends AppCompatActivity {
             mediaPlayer.setDataSource(path);
             mediaPlayer.prepare();
             mediaPlayer.start();
+
+            //TTS 재생중 음성 인식 중지
+            if (speechRecognizer!=null){
+                speechRecognizer.stopListening();
+            }
+            mediaPlayer.setOnCompletionListener(mp -> {
+                mp.release();
+                startRecognition();
+            });
         } catch (IOException e) {
             showErrorToast("음성 재생 오류: " + e.getMessage());
         }
@@ -270,6 +295,16 @@ public class C_FlavorActivity extends AppCompatActivity {
         startRecognition();
     }
 
+    private void stopTTS(){
+        if(mediaPlayer!=null){
+            if (mediaPlayer.isPlaying()){
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer=null;
+        }
+    }
+
     private String getErrorMessage() {
         return languageMode.equals("ko") ?
                 "맛을 인식하지 못했습니다. 다시 시도해주세요." :
@@ -286,7 +321,11 @@ public class C_FlavorActivity extends AppCompatActivity {
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, getLanguageCode())
                 .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
-        speechRecognizer.startListening(intent);
+        if (speechRecognizer != null) {
+            speechRecognizer.startListening(intent);
+        } else {
+            Toast.makeText(this, "음성 인식 초기화 오류", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private String getLanguageCode() {
@@ -294,6 +333,10 @@ public class C_FlavorActivity extends AppCompatActivity {
     }
 
     private void goToNextScreen() {
+        stopTTS();
+        if (speechRecognizer !=null){
+            speechRecognizer.stopListening();
+        }
         startActivity(new Intent(this, D_ToppingActivity.class)
                 .putExtra("selectedFlavor", selectedFlavor)
                 .putExtra("languageMode", languageMode)
@@ -302,10 +345,16 @@ public class C_FlavorActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    protected void onDestroy(){
         super.onDestroy();
+        stopTTS();
         if (speechRecognizer != null) {
             speechRecognizer.destroy();
+            speechRecognizer = null;
+        }
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
         }
     }
 }

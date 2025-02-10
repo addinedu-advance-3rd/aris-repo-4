@@ -13,7 +13,7 @@ class OrderPublisher(Node):
     
     def __init__(self):
         super().__init__('order')
-        self.host = "192.168.0.37"  # 서버 IP (서버가 실행되는 PC의 IP 주소)
+        self.host = "localhost"  # 서버 IP (서버가 실행되는 PC의 IP 주소)
         self.port_order = 6789  # 주문내용 받는 포트
         self.port_voice = 8888  # 음성서비스 요청 받는 포트
         self.order_publisher = self.create_publisher(AppOrder, '/app_order', 10)
@@ -72,8 +72,7 @@ class OrderPublisher(Node):
         while True:
             try:
                 # 클라이언트 연결 수락
-                self.client_voice_socket, self.client_voice_address = self.server_voice_socket.accept()
-                print(f"client_voice_address 값 확인: {self.client_voice_address}") 
+                self.client_voice_socket, self.client_voice_address = self.server_voice_socket.accept() 
                 print(f"클라이언트 {self.client_voice_address}가 연결되었습니다.")
 
                 while True:

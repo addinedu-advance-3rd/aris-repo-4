@@ -6,11 +6,10 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-public class E_PaymentActivity extends Activity implements ROSService.ROSListener {
+public class E_PaymentActivity extends Activity {
 
     private RadioButton card_btn, app_btn;
     private TextView textPaymentAmount;
@@ -33,6 +32,7 @@ public class E_PaymentActivity extends Activity implements ROSService.ROSListene
         selectedFlavor = getIntent().getStringExtra("selectedFlavor");
         totalPrice = getIntent().getIntExtra("totalPrice", 4000);
 
+
         initUI();
     }
 
@@ -46,29 +46,19 @@ public class E_PaymentActivity extends Activity implements ROSService.ROSListene
 
         done.setOnClickListener(v -> {
             String paymentData = "결제완료|맛:" + selectedFlavor + "|금액:" + totalPrice;
-
-            goToFinalScreen(); //이거 한줄만 추가하면됨!!
+            Intent intent = new Intent(E_PaymentActivity.this,SurveyPopActivity.class);
+            startActivity(intent);
+            finish();
+            //goToFinalScreen(); //이거 한줄만 추가하면됨!!
         });
     }
 
-    @Override
-    public void onDataReceived(String data) {
-        runOnUiThread(() -> {
-            try {
-                waitingTime = Integer.parseInt(data.trim());
-                goToFinalScreen();
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "대기시간 수신 실패", Toast.LENGTH_SHORT).show();
-            }
-        });
-    }
-
-    private void goToFinalScreen() {
-        Intent intent = new Intent(this, FinalActivity.class);
-        intent.putExtra("selectedFlavor", selectedFlavor);
-        intent.putExtra("waitingTime", waitingTime);
-        startActivity(intent);
-    }
+//    private void goToFinalScreen() {
+//        Intent intent = new Intent(this, FinalActivity.class);
+//        intent.putExtra("selectedFlavor", selectedFlavor);
+//        intent.putExtra("waitingTime", waitingTime);
+//        startActivity(intent);
+//    }
 
     @Override
     protected void onDestroy() {

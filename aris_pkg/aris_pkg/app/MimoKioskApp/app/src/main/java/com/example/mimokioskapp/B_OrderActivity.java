@@ -40,6 +40,8 @@ public class B_OrderActivity extends AppCompatActivity {
     private ToggleButton language_btn;
     private Button next_btn;
     private TextView order_text;
+    private MediaPlayer mediaPlayer;
+
     private SpeechRecognizer speechRecognizer;
 
     @Override
@@ -57,8 +59,9 @@ public class B_OrderActivity extends AppCompatActivity {
             languageMode = "ko"; // 기본값 설정
         }
 
+        stopTTS();
         // TTS로 안내 메시지 출력
-        new TTSAsyncTask().execute(languageMode.equals("ko") ? "주문하시겠습니까?" : "Would you like to order?");
+        new TTSAsyncTask().execute(languageMode.equals("ko") ? "주문하시겠어요?" : "Would you like to order?");
 
         // 언어 설정 버튼 클릭 리스너
         language_btn.setOnClickListener(new View.OnClickListener() {
@@ -83,7 +86,7 @@ public class B_OrderActivity extends AppCompatActivity {
 
         // 다음 버튼 클릭 리스너
         next_btn.setOnClickListener(v -> {
-            new TTSAsyncTask().execute(languageMode.equals("ko") ? "주문을 도와드릴게요." : "Let me help you with your order.");
+            stopTTS();
             goToNextScreen();
         });
 
@@ -146,21 +149,24 @@ public class B_OrderActivity extends AppCompatActivity {
                 return e.getMessage();
             }
         }
-
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            stopTTS();
 
             // 결과 처리
             if (result.endsWith(".mp3")) {
+                stopTTS();
                 // MP3 파일이 생성되었으므로 이를 재생하는 코드 추가
-                MediaPlayer mediaPlayer = new MediaPlayer();
+                mediaPlayer = new MediaPlayer();
                 try {
                     mediaPlayer.setDataSource(result); // 생성된 MP3 파일 경로를 전달
                     mediaPlayer.prepare(); // 파일 준비
                     mediaPlayer.start(); // 음성 재생 시작
-
-                    Toast.makeText(B_OrderActivity.this, "음성 파일이 생성되었고 재생되었습니다: " + result, Toast.LENGTH_LONG).show();
+                    mediaPlayer.setOnCompletionListener(mp -> {
+                        mp.release();
+                        mediaPlayer = null;
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                     Toast.makeText(B_OrderActivity.this, "음성 파일 재생 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -197,11 +203,13 @@ public class B_OrderActivity extends AppCompatActivity {
                 @Override
                 public void onEndOfSpeech() {
                     Log.d(TAG, "음성 인식 종료");
+                    stopTTS();
                 }
 
                 @Override
                 public void onError(int error) {
                     Log.e(TAG, "음성 인식 오류: " + error);
+                    stopTTS();
                     new android.os.Handler().postDelayed(() -> startListeningForResponse(), 1000); // 1초 후 다시 시도
                 }
 
@@ -214,7 +222,6 @@ public class B_OrderActivity extends AppCompatActivity {
 
                         // "네" 또는 "예"를 인식한 경우
                         if (recognizedText.contains("네") || recognizedText.contains("예") || recognizedText.contains("yes") || recognizedText.contains("yeah")) {
-                            new TTSAsyncTask().execute(languageMode.equals("ko") ? "주문을 도와드릴게요." : "Let me help you with your order.");
                             goToNextScreen();
                         }
                         // "아니오" 또는 "no"를 인식한 경우
@@ -242,21 +249,48 @@ public class B_OrderActivity extends AppCompatActivity {
         intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
         speechRecognizer.startListening(intent);
     }
-
     private void goToNextScreen() {
+        stopTTS();
+        if (speechRecognizer !=null){
+            speechRecognizer.stopListening();
+        }
         // 선택된 언어로 다음 화면으로 이동
         Intent intent = new Intent(B_OrderActivity.this, C_CupConeActivity.class);
         intent.putExtra("languageMode", languageMode);
         startActivity(intent);
         finish();
     }
+    private void stopTTS(){
+        if(mediaPlayer!=null){
+            if (mediaPlayer.isPlaying()){
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer=null;
+        }
+    }
+
+
+
+
+
 
     @Override
     protected void onPause() {
         super.onPause();
+        stopTTS();
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
         if (speechRecognizer != null) {
             speechRecognizer.destroy();
             speechRecognizer = null;
+        }
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
         }
     }
 

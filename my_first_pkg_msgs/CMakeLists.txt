@@ -19,7 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OrderHistory.msg"
   "msg/InventoryInfo.msg"
   "msg/AppOrder.msg"
-
+  "srv/CapsulePosition.srv"
 )
 
 

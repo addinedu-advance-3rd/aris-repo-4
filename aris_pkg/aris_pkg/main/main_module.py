@@ -41,7 +41,7 @@ class ToppingMain(object):
         self._tcp_acc = 2000  # TCP 가속도 설정
         self._angle_speed = 50  # 관절 속도 설정
         self._angle_acc = 500  # 관절 가속도 설정
-        self._angle_speed_low = 10  
+        self._angle_speed_low = 3  
         self._vars = {}
         self._funcs = {}
         self._robot_init()
@@ -707,7 +707,7 @@ class ToppingMain(object):
         code = self._arm.set_pause_time(11)
         if not self._check_code(code, 'set_pause_time'):
             return
-        code = self._arm.set_servo_angle(angle=[16.4, 18.3, 51.4, 103.8, 81.2, 32.1], speed=self._angle_speed_low, mvacc=self._angle_acc, wait=False, radius=0.0)
+        code = self._arm.set_servo_angle(angle=[16.4, 22, 50.5, 104.4, 82.3, 27.6], speed=self._angle_speed_low, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return
         code = self._arm.set_pause_time(4)
@@ -720,7 +720,7 @@ class ToppingMain(object):
         code = self._arm.set_pause_time(3)
         if not self._check_code(code, 'set_pause_time'):
             return 
-        code = self._arm.set_servo_angle(angle=[30.0, -24.5, 10.9, 90.0, 90.0, 35.4], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
+        code = self._arm.set_servo_angle(angle=[30.0, -9.1, 8.4, 90.0, 90.0, 17.6], speed=self._angle_speed, mvacc=self._angle_acc, wait=False, radius=0.0)
         if not self._check_code(code, 'set_servo_angle'):
             return
     
@@ -904,74 +904,74 @@ class ToppingMain(object):
     # Robot Main Run
     def run(self):
         try:
-            self.connect_machine()
-            print(self.a,self.b)
+            # self.connect_machine()
+            # print(self.a,self.b)
             
-            self.initialization()
+            # self.initialization()
 
-            self.grip_capsule(1)
+            # self.grip_capsule(1)
             
-            self.pick_up_zone_to_holder()
+            # self.pick_up_zone_to_holder()
                 
-            self.put_capsule()
+            # self.put_capsule()
 
-            self.holder_to_cup_dispensor()
+            # self.holder_to_cup_dispensor()
 
-            self.grip_cup()   
+            # self.grip_cup()   
 
-            self.cup_dispensor_to_ice_cream_receiver()   
+            # self.cup_dispensor_to_ice_cream_receiver()   
             
-            self.press_ice_cream()
+            # self.press_ice_cream()
             
-            self.receive_ice_cream() 
+            # self.receive_ice_cream() 
             
-            self.receive_topping(1)
+            # self.receive_topping(1)
 
-            self.to_pick_up_zone()    
+            # self.to_pick_up_zone()    
             
-            self.pick_up_zone_to_holder() 
+            # self.pick_up_zone_to_holder() 
             
-            self.grip_empty_capsule()  
+            # self.grip_empty_capsule()  
             
-            self.drop_empty_capsule()
+            # self.drop_empty_capsule()
                 
-            self.finish_process()
+            # self.finish_process()
             
 
             
-            # self.co_initialization()
+            self.co_initialization()
 
-            # self.co_grip_capsule(1)
+            self.co_grip_capsule(3)
             
-            # self.co_pick_up_zone_to_holder()
+            self.co_pick_up_zone_to_holder()
                 
-            # self.co_put_capsule()
+            self.co_put_capsule()
 
-            # self.co_holder_to_cone_tray()
+            self.co_holder_to_cone_tray()
 
-            # self.co_grip_cone_tray()
+            self.co_grip_cone_tray()
             
-            # self.co_move_to_get_cone()
+            self.co_move_to_get_cone()
             
 
-            # self.co_to_ice_cream_receiver()   
+            self.co_to_ice_cream_receiver()   
             
-            # self.co_receive_ice_cream() 
+            self.co_receive_ice_cream() 
             
-            # self.co_receive_topping(1)
+            self.co_receive_topping(1)
             
-            # self.co_give_ice_cream_cone()
+            self.co_give_ice_cream_cone()
             
             
-            # self.co_place_cone_tray()    
+            self.co_place_cone_tray()    
             
-            # self.co_pick_up_zone_to_holder() 
+            self.co_pick_up_zone_to_holder() 
             
-            # self.co_grip_empty_capsule()  
+            self.co_grip_empty_capsule()  
             
-            # self.co_drop_empty_capsule()
+            self.co_drop_empty_capsule()
                 
-            # self.co_finish_process()
+            self.co_finish_process()
         except Exception as e:
             self.pprint('MainException: {}'.format(e))
         self.alive = False

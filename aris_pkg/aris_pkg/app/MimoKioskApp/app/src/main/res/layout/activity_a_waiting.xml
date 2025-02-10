@@ -14,6 +14,7 @@
         android:onClick="showAdminPasswordDialog"
         android:text="관리자모드" />
 
+
     <ToggleButton
         android:id="@+id/language_btn"
         android:layout_width="100dp"
@@ -23,7 +24,7 @@
         android:background="@drawable/kor_img"
         android:padding="0dp"
         android:textOff=""
-        android:textOn="" />
+        android:textOn=""/>
 
     <TextView
         android:id="@+id/recognized_text"

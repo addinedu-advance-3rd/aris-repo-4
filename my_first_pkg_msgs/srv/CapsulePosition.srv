@@ -1,0 +1,5 @@
+string capsule_position
+bool req
+---
+bool success
+string message

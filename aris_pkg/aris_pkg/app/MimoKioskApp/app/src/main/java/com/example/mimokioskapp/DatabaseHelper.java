@@ -6,6 +6,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class DatabaseHelper extends SQLiteOpenHelper {
     // 테이블 및 컬럼 이름 설정
@@ -26,7 +27,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COL_TOPPING = "topping";
     public static final String COL_CUP_CONE = "cup_cone";
     public static final String COL_PRICE = "price";
+    public static final String SURVEY_TABLE = "survey_data";
     public static final String COL_TIMESTAMP = "timestamp";
+    public static final String COL_CUSTOMER_TYPE = "customer_type";
+    public static final String COL_GENDER = "gender";
+    public static final String COL_AGE_GROUP = "age_group";
+    public static final String COL_USER_ID = "user_id";
+    public static final String COL_SATISFACTION = "satisfaction";
+    public static final String COL_ORDER_START_TIME = "order_start_time";
+    public static final String COL_ORDER_END_TIME = "order_end_time";
+    public static final String COL_ORDER_DURATION = "order_duration";
 
     // 가격 설정
     private static final int ICE_CREAM_PRICE = 4000;  // 아이스크림 가격
@@ -70,8 +80,48 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 COL_PRICE + " INTEGER, " +
                 COL_TIMESTAMP + " INTEGER DEFAULT CURRENT_TIMESTAMP)");
 
+        db.execSQL("CREATE TABLE " + SURVEY_TABLE + " ("
+                + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COL_CUSTOMER_TYPE + " TEXT, "
+                + COL_GENDER + " TEXT, "
+                + COL_AGE_GROUP + " TEXT, "
+                + COL_USER_ID + " TEXT, "
+                + COL_SATISFACTION + " INTEGER, "
+                + COL_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP)");
+
+        db.execSQL("CREATE TABLE orders ("
+                + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COL_ORDER_START_TIME + " DATETIME, "
+                + COL_ORDER_END_TIME + " DATETIME, "
+                + COL_ORDER_DURATION + " INTEGER)");
         // 초기 재고 입력
         insertInitialStock(db);
+    }
+
+    //주문 시작시간 기록
+    public void recordOrderStartTime(long startTime){
+        SQLiteDatabase db=this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(COL_ORDER_START_TIME,startTime);
+        db.insert("orders",null,values);
+    }
+
+    //주문 소요 시간 계산
+    public void calculateOrderDuration(long endTime){
+        SQLiteDatabase db=this.getWritableDatabase();
+        Cursor cursor = db.rawQuery("SELECT " + COL_ORDER_START_TIME + " FROM orders ORDER BY " + COL_ID + " DESC LIMIT 1", null);
+
+        if(cursor.moveToFirst()){
+            long startTime = cursor.getLong(0);
+            long duration = endTime - startTime;
+
+            ContentValues values = new ContentValues();
+            values.put(COL_ORDER_END_TIME, endTime);
+            values.put(COL_ORDER_START_TIME, duration);
+
+            db.update("orders", values, COL_ID + " = (SELECT MAX(" + COL_ID + ") FROM orders)", null);
+        }
+        cursor.close();
     }
 
     @Override
@@ -171,6 +221,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 return "";
         }
     }
+    // 설문 데이터 저장 메서드
+    public void insertSurveyData(ContentValues values) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            db.insert(SURVEY_TABLE, null, values);
+            Log.d("Database", "설문 데이터 저장 성공");
+        } catch (Exception e) {
+            Log.e("Database", "설문 데이터 저장 실패: " + e.getMessage());
+        } finally {
+            db.close();
+        }
+    }
 
     // 가격 계산 (아이스크림 가격 + 토핑 가격)
     private int calculatePrice(String flavor, String topping) {
@@ -191,7 +253,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         orderValues.put(COL_TIMESTAMP, System.currentTimeMillis()); // 현재 시간 저장
         db.insert(ORDER_TABLE, null, orderValues);
     }
-
     // 특정 테이블의 모든 데이터 가져오기
     public Cursor getAllData(String tableName) {
         SQLiteDatabase db = this.getReadableDatabase();
