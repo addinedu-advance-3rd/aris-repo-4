@@ -44,7 +44,7 @@ public class D_ToppingActivity extends AppCompatActivity {
     private Button topping_btn;
     private LinearLayout toppingLayout;
     private RadioGroup rg,toppingGroup;
-    private TextView text_price;
+    private TextView text_price, tv_notice;
 
     // Business Logic
     private String languageMode = "ko";
@@ -135,10 +135,24 @@ public class D_ToppingActivity extends AppCompatActivity {
     private void setupUIListeners() {
         rg.setOnCheckedChangeListener((group, checkedId) -> handleRadioGroupChange(checkedId));
         toppingGroup.setOnCheckedChangeListener((group, checkedId) -> updatePrice());
+        tv_notice = findViewById(R.id.tv_notice);
 
 
+        none_btn.setOnClickListener(v -> {
+            toppingLayout.setVisibility(View.GONE);
+            topping1_rb.setChecked(false);
+            topping2_rb.setChecked(false);
+            topping3_rb.setChecked(false);
+            updatePrice();
+        });
 
-        topping_btn.setOnClickListener(v -> handleConfirmation());
+        topping_btn.setOnClickListener(v ->{
+            if (yes_btn.isChecked()|none_btn.isChecked()) {
+                handleConfirmation();
+            }
+            else
+                tv_notice.setVisibility(View.VISIBLE);
+        });
     }
 
     private void initializeServices() {

@@ -6,6 +6,8 @@
     android:gravity="center"
     android:background="#E8F5E9">
 
+
+
     <TextView
         android:id="@+id/payment_text"
         android:layout_width="wrap_content"
@@ -15,60 +17,65 @@
         android:layout_marginBottom="30dp"
         android:gravity="center" />
     <TextView
+        android:background="@color/white"
+        android:id="@+id/tv_notice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20dp"
+        android:textColor="#E3242B"
+        android:textStyle="bold"
+        android:text="결제 방법을 선택해주세요."
+        android:visibility="gone"/>
+    <TextView
         android:id="@+id/textPaymentAmount"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="4000원"/>
     <RadioGroup
+        android:id="@+id/rg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/card_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="카드 결제(Credit Card)"
+            android:layout_marginRight="150dp"/>
+
+        <RadioButton
+            android:id="@+id/app_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="앱 결제(App)"/>
+    </RadioGroup>
 
 
         <LinearLayout
-            android:orientation="vertical"
-            android:id="@+id/payment_img"
+            android:orientation="horizontal"
+            android:id="@+id/img"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingRight="100dp">
+            android:layout_height="wrap_content">
 
             <ImageView
                 android:id="@+id/card_img"
                 android:layout_width="200dp"
                 android:layout_height="200dp"
-                android:background="@drawable/card_img"/>
-
-            <RadioButton
-                android:id="@+id/card_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="카드 결제(Credit Card)"/>
-        </LinearLayout>
-
-
-        <LinearLayout
-            android:orientation="vertical"
-            android:id="@+id/payment_app"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+                android:background="@drawable/card_img"
+                android:layout_marginRight="50dp"/>
 
             <ImageView
                 android:id="@+id/app_img"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:background="@drawable/app_img"/>
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:background="@drawable/app_img"
+                android:layout_marginLeft="70dp"
+                android:layout_marginTop="30dp"/>
 
-            <RadioButton
-                android:layout_marginTop="10dp"
-                android:id="@+id/app_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="앱 결제(App)"/>
         </LinearLayout>
 
-    </RadioGroup>
 
     <Button
         android:id="@+id/done"

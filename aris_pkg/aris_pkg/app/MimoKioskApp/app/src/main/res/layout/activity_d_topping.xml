@@ -6,6 +6,17 @@
     android:gravity="center"
     android:background="#FFF9C4">
 
+    <TextView
+        android:background="@color/white"
+        android:id="@+id/tv_notice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20dp"
+        android:textColor="#E3242B"
+        android:textStyle="bold"
+        android:text="'선택 안함' 또는 '토핑 선택' 버튼을 선택해주세요."
+        android:visibility="gone"/>
+
 
     <TextView
         android:id="@+id/topping_text"

@@ -1,55 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
+    android:layout_height="match_parent"
+    android:background="@color/logo_pink1"
+    android:orientation="vertical">
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp">
-
+        android:layout_height="match_parent">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
-            <!-- 일반 텍스트로 데이터 표시 -->
-
             <Button
+                android:layout_marginRight="20dp"
                 android:id="@+id/exit_btn"
+                android:background="@drawable/btn_style"
+                android:textColor="@color/logo_pink1"
+                android:shadowColor="#FF4AF9"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5"
+                android:textStyle="bold"
                 android:layout_marginTop="16dp"
                 android:layout_gravity="top|right"
                 android:text="나가기" />
 
+
+
             <TextView
+                android:paddingLeft="20dp"
                 android:id="@+id/tv_inventory_data"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="데이터 로딩 중..."
                 android:paddingBottom="20dp" />
 
-            <!-- 주문 테이블 제목 -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📌 주문 내역"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:paddingBottom="10dp" />
+    <!-- 주문 테이블 제목 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📌 주문 내역"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="10dp"
+        android:paddingLeft="20dp"/>
 
-            <!-- 주문 내역을 표시할 TableLayout -->
-            <TableLayout
-                android:id="@+id/order_table"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:stretchColumns="*" />
+    <HorizontalScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <!-- 주문 내역을 표시할 TableLayout -->
+        <TableLayout
+            android:id="@+id/order_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="*"
+            android:paddingLeft="20dp"/>
+    </HorizontalScrollView>
+
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TableLayout
+            android:paddingLeft="20dp"
+            android:id="@+id/survey_table"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </HorizontalScrollView>
+
+    <HorizontalScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <TableLayout
+            android:paddingLeft="20dp"
+            android:id="@+id/auto_table"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="*" />
+    </HorizontalScrollView>
 
         </LinearLayout>
     </ScrollView>
 
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+
+
+
+</LinearLayout>

@@ -41,7 +41,7 @@ public class A_WaitingActivity extends Activity {
 
     private long orderStartTime; //주문 시작 시간 기록
 
-    private static final int ROS2_PORT_VOICE = 8888;
+    private static final int ROS2_PORT_VOICE = 6666;
     private Socket socket;
     private OutputStream outputStream;
     private InputStream inputStream;
@@ -63,6 +63,9 @@ public class A_WaitingActivity extends Activity {
     private ROSService rosService;
     private boolean isListening = false;
 
+    private DatabaseHelper dbHelper;
+    private long currentOrderId;
+
     private SpeechRecognizer speechRecognizer;
 
     @Override
@@ -70,9 +73,9 @@ public class A_WaitingActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_waiting);
 
-        orderStartTime = System.currentTimeMillis(); //주문 시작 시간 기록
+        dbHelper = new DatabaseHelper(this);
+        currentOrderId = dbHelper.recordOrderStart(); //주문 시작 시간 기록
 
-        new DatabaseHelper(this).recordOrderStartTime(orderStartTime);
 
         rosService = new ROSService(((ROSService) getApplication()).getIpAddress(),8888,this);
 
@@ -323,6 +326,7 @@ public class A_WaitingActivity extends Activity {
         }
         Intent intent = new Intent(A_WaitingActivity.this, B_OrderActivity.class);
         intent.putExtra("languageMode", languageMode);
+        intent.putExtra("ORDER_ID", currentOrderId);
         startActivity(intent);
         finish();
     }

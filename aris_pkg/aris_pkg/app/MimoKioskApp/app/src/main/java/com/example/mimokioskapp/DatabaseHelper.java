@@ -8,6 +8,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
 public class DatabaseHelper extends SQLiteOpenHelper {
     // 테이블 및 컬럼 이름 설정
     public static final String DATABASE_NAME = "IceCreamShop.db";
@@ -34,18 +38,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COL_AGE_GROUP = "age_group";
     public static final String COL_USER_ID = "user_id";
     public static final String COL_SATISFACTION = "satisfaction";
+
+    //주문 시간 기록용
+    public static final String ORDERS_TABLE = "orders";
     public static final String COL_ORDER_START_TIME = "order_start_time";
     public static final String COL_ORDER_END_TIME = "order_end_time";
     public static final String COL_ORDER_DURATION = "order_duration";
+    public static final String COL_ORDER_DATE = "order_date";
 
     // 가격 설정
     private static final int ICE_CREAM_PRICE = 4000;  // 아이스크림 가격
     private static final int TOPPING_PRICE = 300;     // 토핑 가격
-    public static String COLUMN_FLAVOR;
-    public static String COLUMN_TOPPINGS;
-    public static String COLUMN_CUPCONE;
-    public static String COLUMN_PRICE;
-    public static String COLUMN_TIMESTAMP;
+
 
     //private ROSService rosService;
 
@@ -56,6 +60,16 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+
+        //주문 기록용
+        String createOrdersTable = "CREATE TABLE " + ORDERS_TABLE + " ("
+                + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + COL_ORDER_START_TIME + " DATETIME, "
+                + COL_ORDER_END_TIME + " DATETIME, "
+                + COL_ORDER_DURATION + " INTEGER, "
+                + COL_ORDER_DATE + " TEXT)";
+        db.execSQL(createOrdersTable);
+
         // 재고 테이블 생성
         db.execSQL("CREATE TABLE " + ICE_CREAM_TABLE + " (" +
                 COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -89,40 +103,60 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + COL_SATISFACTION + " INTEGER, "
                 + COL_TIMESTAMP + " DATETIME DEFAULT CURRENT_TIMESTAMP)");
 
-        db.execSQL("CREATE TABLE orders ("
-                + COL_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                + COL_ORDER_START_TIME + " DATETIME, "
-                + COL_ORDER_END_TIME + " DATETIME, "
-                + COL_ORDER_DURATION + " INTEGER)");
+
         // 초기 재고 입력
         insertInitialStock(db);
     }
 
-    //주문 시작시간 기록
-    public void recordOrderStartTime(long startTime){
-        SQLiteDatabase db=this.getWritableDatabase();
+    //주문 시작 시간 기록
+    public long recordOrderStart(){
+        SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
+
+        long startTime = System.currentTimeMillis();
+        String date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date(startTime));
+
         values.put(COL_ORDER_START_TIME,startTime);
-        db.insert("orders",null,values);
+        values.put(COL_ORDER_DATE,date);
+
+        long orderID = db.insert(ORDERS_TABLE, null, values);
+        db.close();
+        return orderID;
     }
 
-    //주문 소요 시간 계산
-    public void calculateOrderDuration(long endTime){
-        SQLiteDatabase db=this.getWritableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + COL_ORDER_START_TIME + " FROM orders ORDER BY " + COL_ID + " DESC LIMIT 1", null);
+    //주문 완료 시간 기록 및 소요 시간 계산
+    public void recordOrderCompletion(long orderId){
+        SQLiteDatabase db = this.getWritableDatabase();
+        long endTime  = System.currentTimeMillis();
 
-        if(cursor.moveToFirst()){
+        //시작 시간 조회
+        Cursor cursor = db.rawQuery("SELECT " + COL_ORDER_START_TIME
+                        +" FROM "+ ORDERS_TABLE
+                        +" WHERE "+COL_ID + " = ?",
+                        new String[]{String.valueOf(orderId)});
+        if (cursor.moveToFirst()){
             long startTime = cursor.getLong(0);
-            long duration = endTime - startTime;
+            long duration = endTime -startTime;
 
             ContentValues values = new ContentValues();
-            values.put(COL_ORDER_END_TIME, endTime);
-            values.put(COL_ORDER_START_TIME, duration);
+            values.put(COL_ORDER_END_TIME,endTime);
+            values.put(COL_ORDER_DURATION, duration);
 
-            db.update("orders", values, COL_ID + " = (SELECT MAX(" + COL_ID + ") FROM orders)", null);
+            db.update(ORDERS_TABLE,values,
+                    COL_ID + " = ?",
+                    new String[]{String.valueOf(orderId)});
         }
         cursor.close();
+        db.close();
     }
+
+    //시간 변환 유틸리티 메서드
+    public static String converMillisToDate(long millis) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        return sdf.format(new Date(millis));
+    }
+
+
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -258,6 +292,13 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.rawQuery("SELECT * FROM " + tableName, null);
     }
+
+    //모든 주문 데이터 조회
+    public Cursor getAllOrders(){
+        SQLiteDatabase db=this.getReadableDatabase();
+        return db.rawQuery("SELECT * FROM " + ORDERS_TABLE, null);
+    }
+
 
     // 재고 정보 가져오기 (주문 후 확인용)
     public String getInventoryInfo() {

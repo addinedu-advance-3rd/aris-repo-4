@@ -66,7 +66,6 @@
             android:label="설문조사 팝업창"/>
         <activity
             android:name=".AdminActivity"
-            android:theme="@style/Theme.AppCompat.Dialog"
             android:label="관리자 모드 화면"/>
 
         <activity android:name=".SurveyActivity"

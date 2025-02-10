@@ -49,6 +49,11 @@ class RobotArm(Node):
             self.get_logger().error(f"Error connecting to the arm: {str(e)}")
             return 
         
+        if self._arm.warn_code != 0:
+            self._arm.clean_warn()
+        if self._arm.error_code != 0:
+            self._arm.clean_error()
+        
         self.mimo  = ToppingMain(arm)
         self.timer = self.create_timer(1.0, self.modes)
         self.before_mode = 'start'
@@ -84,8 +89,8 @@ class RobotArm(Node):
         self.True_messege=True
 
     #     # Subscribers
-        self.prohibit_subscriber = self.create_subscription(Bool, '/warning', self.prohibit_check_callback, 1)
-        self.subscription = self.create_subscription(AppOrder,'/app_order', self.order_callback, 1)  # 수신할 토픽 이름self.listener_callback,
+        self.prohibit_subscriber = self.create_subscription(Bool, '/warning', self.prohibit_check_callback, 10)
+        self.subscription = self.create_subscription(AppOrder,'/app_order', self.order_callback, 10)  # 수신할 토픽 이름self.listener_callback,
         
         self.cli = self.create_client(CapsulePosition, '/process_order')
 
@@ -208,8 +213,10 @@ class RobotArm(Node):
         self.prohibit = msg.data
         if msg.data is True:  # 접근 감지 발생
             self.get_logger().warn("접근 감지! 즉시 정지합니다.")
-            self._arm.set_state(3)  # XArm 정지
-            self.mode = 'stop'  # 현재 모드 강제 중지
+            code = self._arm.set_state(3)  # XArm 정지
+            if not self.mimo._check_code(code, 'set_state'):
+                return
+            self.mode = self.before_mode  # 현재 모드 강제 중지
         else:
             code = self._arm.set_state(0)
             if not self.mimo._check_code(code, 'set_state'):
@@ -315,23 +322,12 @@ class RobotArm(Node):
         self.get_logger().error(f"Message not received in mode: {before_mode}")
         self.mode = self.before_mode
 
-    def prohibit_method(self):
-        print(f"self.prohibit_flag:{self.prohibit_flag}")
-        if self.prohibit_flag == False:
-            code = self._arm.set_state(3)
-            if not self.mimo._check_code(code, 'set_state'):
-                time.sleep(2)
-            return
-        else:
-            code = self._arm.set_state(0)
-            if not self.mimo._check_code(code, 'set_state'):
-                return
+    
             
     def mode_initialize(self):
-        # self.prohibit_method()
+        
                 
         self.get_logger().info("초기 위치로 이동")
-        self.mimo.connect_machine()
         print(f"self.cup_mode: {self.cup_mode}")
         if self.cup_mode == 1:
             self.mimo.initialization()
@@ -343,12 +339,14 @@ class RobotArm(Node):
 
         if not self.order_check_flag or not self.pickandplace_flag:
             self.get_logger().error("Required data (capsule or pick and place) not received. Returning to start.")
-            self.mode = 'motion_following'
+            #self.mode = 'motion_following'
+            self.mode = 'start'
             self.before_mode = 'start'
 
             return
 
         self.mode = 'check_motion'
+        self.before_mode = 'start'
 
 
     def mode_order_check(self):
@@ -361,7 +359,7 @@ class RobotArm(Node):
             
 
     def mode_check_motion(self):
-        #self.prohibit_method()
+        
         print('2222222222222')
         self.get_logger().info("캡슐 놓여져 있는 위치 확인")
         print('1111111111111')
@@ -404,8 +402,7 @@ class RobotArm(Node):
 
             
     def mode_verify_grasp(self):
-        #self.prohibit_method()
-        
+      
         self.get_logger().info("물체 제대로 잡았는 지 확인")            
         
         if not self.pickandplace_flag:
@@ -415,14 +412,14 @@ class RobotArm(Node):
             return
 
         success = self.picandplace
-        success = True  
+        
         if success:
             self.mode = 'move_to_holder'
         else:
             self.handle_grasp_failure()
 
     def mode_move_to_holder(self):
-        #self.prohibit_method()
+        
         
         self.get_logger().info("캡슐 홀더로 이동")
         if not self.capsuleholder_flag:
@@ -451,7 +448,7 @@ class RobotArm(Node):
             self.handle_move_failure()
 
     def mode_dispense_cup(self):
-        #self.prohibit_method()
+      
 
         self.get_logger().info("컵 디스펜서로 이동")
         
@@ -471,7 +468,7 @@ class RobotArm(Node):
             self.handle_dispense_failure()
 
     def mode_dispense_ice_cream(self):
-        #self.prohibit_method()
+        
 
         self.get_logger().info("아이스크림 디스펜서로 이동")
         if self.cup_mode == 1:
@@ -490,7 +487,7 @@ class RobotArm(Node):
             self.handle_ice_cream_failure()
 
     def mode_add_topping(self):
-        #self.prohibit_method()
+        
         
         self.get_logger().info("아이스크림 위에 토핑 받기")
         if not self.topping_flag:
@@ -513,7 +510,7 @@ class RobotArm(Node):
             self.handle_topping_failure()
 
     def mode_finalize(self):
-        #self.prohibit_method()
+       
         
         self.get_logger().info("Process complete. Returning to initial position...")
         if self.cup_mode == 1:         
@@ -535,7 +532,7 @@ class RobotArm(Node):
 
         self.mode = 'start'
         self.order_check_flag = False
-        self.capsule_check_flag = True
+        self.capsule_check_flag = False
         self.pickandplace_flag = True
         self.capsuleholder_flag = False
         self.topping_flag = False
@@ -555,7 +552,8 @@ class RobotArm(Node):
     def handle_motion_failure(self):
         self.get_logger().error("Motion failure detected. Re-attempting motion...")
         self.mimo.initialization()  # Retry initialization
-        self.mode = 'motion_following'
+        self.mode = 'start'
+        #self.mode = 'motion_following'
 
     def handle_grasp_failure(self):
         self.get_logger().error("Grasp failure detected. Adjusting position and retrying...")

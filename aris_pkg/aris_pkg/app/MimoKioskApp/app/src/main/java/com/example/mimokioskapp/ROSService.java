@@ -48,13 +48,16 @@ public class ROSService extends Application{
         executor.execute(() -> {
             try {
                 socket = new Socket(IP_adress, port_number);
-                Log.d(TAG, "소켓 연결 성공");
+
                 outputStream = socket.getOutputStream();
                 inputStream = socket.getInputStream();
                 startListening(context);
-                Log.d(TAG, "ROS 연결 성공");
+                Log.d(TAG, "소켓 연결 성공");
             } catch (IOException e) {
-                Log.e(TAG, "ROS 연결 실패: " + e.getMessage());
+                Log.e(TAG, "소켓 연결 실패: " + e.getMessage());
+
+                Toast.makeText(context, "서버 연결 실패. 네트워크 상태를 확인하세요.", Toast.LENGTH_SHORT).show();
+
             }
         });
     }
@@ -96,9 +99,16 @@ public class ROSService extends Application{
         ensureExecutorIsActive();
         executor.execute(() -> {
             try {
-                socket.close();
-                outputStream.close();
-                inputStream.close();
+                if (socket != null) { // ✅ Null 체크 추가
+                    socket.close();
+                }
+                if (outputStream != null) { // ✅ Null 체크 추가
+                    outputStream.close();
+                }
+                if (inputStream != null) { // ✅ Null 체크 추가
+                    inputStream.close();
+                }
+
                 Log.d(TAG, "소켓 종료");
                 executor.shutdown();
                 Log.d(TAG, "ROSService 종료");
@@ -107,4 +117,5 @@ public class ROSService extends Application{
             }
         });
     }
+
 }

@@ -116,5 +116,7 @@ public class SurveyActivity extends AppCompatActivity {
         dbHelper.insertSurveyData(values);
 
         Toast.makeText(this, "설문이 제출되었습니다!", Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(SurveyActivity.this, FinalActivity.class);
+        startActivity(intent);
     }
 }
