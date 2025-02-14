@@ -6,17 +6,6 @@
     android:gravity="center"
     android:background="#FFF9C4">
 
-    <TextView
-        android:background="@color/white"
-        android:id="@+id/tv_notice"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20dp"
-        android:textColor="#E3242B"
-        android:textStyle="bold"
-        android:text="'선택 안함' 또는 '토핑 선택' 버튼을 선택해주세요."
-        android:visibility="gone"/>
-
 
     <TextView
         android:id="@+id/topping_text"
@@ -31,108 +20,110 @@
     <RadioGroup
         android:id="@+id/rg"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left"
-        android:layout_marginLeft="70dp">
-
-        <RadioButton
-            android:id="@+id/none_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="선택 안함(None)" />
+        android:layout_height="wrap_content">
 
         <RadioButton
             android:id="@+id/yes_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="토핑 선택(+300원)" />
-    </RadioGroup>
 
-
-        <!-- 하나의 RadioGroup 내에 포함된 RadioButton들 -->
-    <LinearLayout
-        android:id="@+id/toppingLayout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
 
         <LinearLayout
-            android:id="@+id/imageViews"
+            android:id="@+id/topping_ly"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content">
 
-            <ImageView
-                android:id="@+id/topping1_iv"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:background="@drawable/topping1_img" />
-
-            <ImageView
-                android:id="@+id/topping2_iv"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:background="@drawable/topping2_img" />
-
-            <ImageView
-                android:id="@+id/topping3_iv"
-                android:layout_width="200dp"
-                android:layout_height="200dp"
-                android:background="@drawable/topping3_img" />
-        </LinearLayout>
-
-        <RadioGroup
-            android:id="@+id/toppingGroup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/topping1_rb"
-                android:layout_width="200dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="죠리퐁(Jolly Pong)" />
-
-
-            <RadioButton
-                android:id="@+id/topping2_rb"
-                android:layout_width="200dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="코코볼(Cocoball)" />
-
-            <RadioButton
-                android:id="@+id/topping3_rb"
+            <LinearLayout
+                android:id="@+id/topping1"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="해바라기씨(Sunflower Seed)" />
-        </RadioGroup>
-    </LinearLayout>
+                android:orientation="vertical">
 
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+                <ImageView
+                    android:id="@+id/topping1_iv"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:background="@drawable/topping1_img" />
+
+                <CheckBox
+                    android:id="@+id/checkTopping1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="죠리퐁(JOLLYPONG)" />
+            </LinearLayout>
 
 
-        <TextView
-            android:id="@+id/text_price"
+            <LinearLayout
+                android:id="@+id/topping2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/topping2_iv"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:background="@drawable/topping2_img" />
+
+                <CheckBox
+                    android:id="@+id/checkTopping2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="코코볼(Cocoball)" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/topping3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/topping3_iv"
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:background="@drawable/topping3_img" />
+
+                <CheckBox
+                    android:id="@+id/checkTopping3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:text="해바라기씨(Seed Chocoball)" />
+            </LinearLayout>
+        </LinearLayout>
+        <RadioButton
+            android:id="@+id/none_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingRight="100dp"
-            android:text="금액 : 4000원"
-            android:textSize="16sp" />
+            android:text="선택 안함(None)" />
+    </RadioGroup>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/topping_btn"
-            android:layout_width="150dp"
-            android:layout_height="50dp"
-            android:gravity="center"
-            android:text="선택 완료" />
-    </LinearLayout>
+
+            <TextView
+                android:id="@+id/text_price"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="금액 : 4000원"
+                android:textSize="16sp"
+                android:paddingRight="100dp"/>
+            <Button
+                android:id="@+id/topping_btn"
+                android:layout_width="150dp"
+                android:layout_height="50dp"
+                android:gravity="center"
+                android:text="선택 완료"/>
+
+        </LinearLayout>
+
+
 
 
 </LinearLayout>

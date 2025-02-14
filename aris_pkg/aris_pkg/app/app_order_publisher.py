@@ -23,8 +23,10 @@ class OrderPublisher(Node):
         self.port_list = [80,6789,6666,7777,8888,9999]  # 6789: 주문내역, 6666: gpt-api이용, 7777: 게임실행, 8888: , 9999
         self.order_publisher = self.create_publisher(AppOrder, '/app_order', 10)
         self.voice_publisher = self.create_publisher(Bool, '/voice_recognize', 10)
+        self.doll_publisher = self.create_publisher(Bool, '/doll_claw', 10)
         self.order = AppOrder()
         self.voice_bool = Bool()
+        self.doll_bool = Bool()
         self.server_socket_1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket_1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket_1.bind((self.host, self.port_list[1]))  # 서버 IP와 포트 번호 바인딩
@@ -47,6 +49,12 @@ class OrderPublisher(Node):
         self.server_socket_5.listen(1)  # 최대 1개의 연결을 대기 (필요에 따라 변경 가능)
         print("서버가 시작되었습니다. 클라이언트를 기다립니다...")
         print(f"서버IP:{self.host}")
+        host_1, port_1 = self.server_socket_1.getsockname()
+        host_2, port_2 = self.server_socket_2.getsockname()
+        host_3, port_3 = self.server_socket_3.getsockname()
+        host_4, port_4 = self.server_socket_4.getsockname()
+        host_5, port_5 = self.server_socket_5.getsockname()
+        print(f"서버소켓 {port_1} {port_2} {port_3} {port_4} {port_5}")
         self.client_socket_1=None
         self.client_address_1 =None
         self.client_socket_2=None
@@ -79,12 +87,12 @@ class OrderPublisher(Node):
                         self.order_publisher.publish(self.order)
                     else:
                         # 클라이언트가 연결을 끊은 경우
-                        print("클라이언트가 연결을 종료했습니다.")
+                        print(f"클라이언트 {self.client_address_1}가 연결을 종료했습니다.")
                         break
             except KeyboardInterrupt:
                 print("\nServer interrupted by user. Closing server socket...")
                 # 클라이언트 연결 종료
-                self.client_socket_1()
+                self.client_socket_1.close()
                 # 서버 종료 시 소켓 닫기
                 self.server_socket_1.close()
                 print("서버 종료")
@@ -101,11 +109,11 @@ class OrderPublisher(Node):
 
                 while True:
                     # 클라이언트로부터 메시지 수신 (최대 1024 바이트)
-                    data_voice = self.client_socket_2.recv(1024)
-                    if data_voice:
-                        voice_message = data_voice.decode()  # 수신된 데이터를 문자열로 변환
-                        print(f"받은 메시지: {voice_message}")
-                        if voice_message=="True":
+                    data= self.client_socket_2.recv(1024)
+                    if data:
+                        message = data.decode()  # 수신된 데이터를 문자열로 변환
+                        print(f"받은 메시지: {message}")
+                        if message=="True":
                             boolean=True
                         else:
                             boolean=False
@@ -113,7 +121,7 @@ class OrderPublisher(Node):
                         self.voice_publisher.publish(self.voice_bool)
                     else:
                         # 클라이언트가 연결을 끊은 경우
-                        print("클라이언트가 연결을 종료했습니다.")
+                        print(f"클라이언트 {self.client_address_2}가 연결을 종료했습니다.")
                         break
             except KeyboardInterrupt:
                 print("\nServer interrupted by user. Closing server socket...")
@@ -126,7 +134,7 @@ class OrderPublisher(Node):
                 print(f"에러 발생: {e}")
                 break
 
-    def receive_and_publish_game(self):
+    def receive_and_publish_doll(self):
         while True:
             try:
                 # 클라이언트 연결 수락
@@ -135,19 +143,19 @@ class OrderPublisher(Node):
 
                 while True:
                     # 클라이언트로부터 메시지 수신 (최대 1024 바이트)
-                    data_voice = self.client_socket_3.recv(1024)
-                    if data_voice:
-                        voice_message = data_voice.decode()  # 수신된 데이터를 문자열로 변환
-                        print(f"받은 메시지: {voice_message}")
-                        if voice_message=="True":
+                    data= self.client_socket_3.recv(1024)
+                    if data:
+                        message = data.decode()  # 수신된 데이터를 문자열로 변환
+                        print(f"받은 메시지: {message}")
+                        if message=="True":
                             boolean=True
                         else:
                             boolean=False
-                        self.voice_bool.data=boolean                
-                        self.voice_publisher.publish(self.voice_bool)
+                        self.doll_bool.data=boolean                
+                        self.doll_publisher.publish(self.doll_bool)
                     else:
                         # 클라이언트가 연결을 끊은 경우
-                        print("클라이언트가 연결을 종료했습니다.")
+                        print(f"클라이언트 {self.client_address_3}가 연결을 종료했습니다.")
                         break
             except KeyboardInterrupt:
                 print("\nServer interrupted by user. Closing server socket...")
@@ -159,30 +167,34 @@ class OrderPublisher(Node):
             except Exception as e:
                 print(f"에러 발생: {e}")
                 break
-
+            
     def thread_start(self):
-        # 두 개의 스레드 생성 및 시작
-            order_thread = threading.Thread(target=self.receive_and_publish_order)
-            voice_thread = threading.Thread(target=self.receive_and_publish_voice)
-            game_thread = threading.Thread(target=self.receive_and_publish_game)
+        try:
+            # 스레드 생성
+            threads = [
+                threading.Thread(target=self.receive_and_publish_order, daemon=True),
+                threading.Thread(target=self.receive_and_publish_voice, daemon=True),
+                threading.Thread(target=self.receive_and_publish_doll, daemon=True)
+            ]
 
-            order_thread.start()
-            voice_thread.start()
-            game_thread.start()
+            # 실행
+            for thread in threads:
+                thread.start()
 
-            order_thread.join()
-            voice_thread.join()
-            game_thread.join()
-
-            # 클라이언트 연결 종료
-            self.client_socket_1.close()
-            self.client_socket_2.close()
-            self.client_socket_3.close()
-            # 소켓 종료
-            self.server_socket_1.close()
-            self.server_socket_2.close()
-            self.server_socket_3.close()
-            print("서버 종료")
+            # 서버 계속 실행 (join 제거)
+            while True:
+                rp.spin(self)
+        except KeyboardInterrupt:
+            print("서버 종료 중...")
+        finally:
+            # 모든 소켓 안전하게 닫기
+            sockets = [
+                self.server_socket_1, self.server_socket_2, self.server_socket_3,
+                self.server_socket_4, self.server_socket_5
+            ]
+            for sock in sockets:
+                sock.close()
+            print("서버 종료 완료")
 
 def main(args=None):
     rp.init(args=args)

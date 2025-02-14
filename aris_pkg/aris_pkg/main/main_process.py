@@ -31,9 +31,12 @@ from configparser import ConfigParser
 import rclpy
 from rclpy.node import Node
 from aris_pkg.main.main_module import ToppingMain 
+from aris_pkg.motion_following.media_pipe_finger import DetectMotion
 from std_msgs.msg import Int64, Bool, String
 from my_first_pkg_msgs.msg import AppOrder, OrderHistory
-from my_first_pkg_msgs.srv import CapsulePosition
+from my_first_pkg_msgs.srv import CapsulePosition, MotionFlag
+from rclpy.action import ActionClient
+from my_first_pkg_msgs.action import MotionFlag
 
 class RobotArm(Node):
     def __init__(self):
@@ -65,6 +68,8 @@ class RobotArm(Node):
         self.prohibit = True
         self.topping_mode = 1
 
+        self.Cone_Status = False
+
         self.inventory_topping = {
             '죠리퐁': 0,
             '코코볼': 0,
@@ -85,14 +90,20 @@ class RobotArm(Node):
         self.capsuleholder_flag = True
         self.topping_flag = True
         self.cup_mode = 0
+        self.motion_flag = False
 
-        self.True_messege=True
+        # self.True_messege=True
 
     #     # Subscribers
         self.prohibit_subscriber = self.create_subscription(Bool, '/warning', self.prohibit_check_callback, 10)
         self.subscription = self.create_subscription(AppOrder,'/app_order', self.order_callback, 10)  # 수신할 토픽 이름self.listener_callback,
-        
-        self.cli = self.create_client(CapsulePosition, '/process_order')
+        self.cli_capsule = self.create_client(CapsulePosition, '/process_order')
+        self.action_client= ActionClient(self, MotionFlag, '/motion_following')
+
+        #self.cli_cone = self.create_client(CapsulePosition, '/process_cone')
+
+        self.doll_subscription = self.create_subscription(Bool, '/doll_claw' ,self.game_callback, 10)        
+        # self.cli_motion = self.create_client(MotionFlag, '/motion_following')
 
         #while not self.cli.wait_for_service(timeout_sec=1.0):
            # self.get_logger().info('서비스가 사용 가능할 때까지 대기 중...')
@@ -105,28 +116,186 @@ class RobotArm(Node):
     #     self.capsuleholder_subscriber = self.create_subscription(bool, '/caopsule_check', self.capsuleholder_callback, 10)
     #     self.topping_subscriber = self.create_subscription(Int64, '/topping_check', self.topping_check_callback, 10)
 
+    def game_callback(self, msg):
+        self.motion_flag = True
+        game_signal = msg.data
+        if game_signal is True:
+            print('와 신난다')
+            print(f'self.motion_flag: {self.motion_flag}1111111111111111111111111111111111111')
+
+            if self.motion_flag == False:
+                self.mode = 'order_check'
+                print('222222222222222222222222222222222222222222222')
+            else:
+                self.get_logger().info("🔵 Sending motion start request to Action Server...")    
+                self.send_goal()  # 액션 서버에 모션 시작 요청 (start=True)
+                self.mode = 'order_check'
+        else:
+            pass
+
+
+    def send_goal(self):
+        """
+        액션 서버로 모션 시작 요청을 보냄
+        """
+        goal_msg = MotionFlag.Goal()
+        goal_msg.start = True  # 모션 시작 요청
+        print(f"goal_msg:{goal_msg}")
+        # 액션 서버가 준비될 때까지 대기
+        self.action_client.wait_for_server()
+        self.get_logger().info("Action server is available, sending goal...")
+
+        # Goal 전송 및 피드백 콜백 등록
+        self._send_goal_future = self.action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self.feedback_callback
+        )
+
+        # Goal 응답 콜백 등록
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+
+    def goal_response_callback(self, future):
+        """
+        Goal 수락 여부 확인 및 결과 처리 시작
+        """
+        goal_handle = future.result()
+
+        if not goal_handle.accepted:
+            self.get_logger().info('Goal rejected by server.')
+            return
+
+        self.get_logger().info('Goal accepted by server, waiting for result...')
+        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+
+    def feedback_callback(self, feedback_msg):
+        """
+        액션 서버로부터의 피드백 수신
+        """
+        feedback = feedback_msg.feedback
+        self.get_logger().info(f"Feedback received: Elapsed Time - {feedback.time}")
+
+
+    def get_result_callback(self, future):
+        """
+        액션 서버로부터 최종 결과 수신 후 모드 전환
+        """
+        result = future.result().result
+
+        if result.end:  # 액션이 성공적으로 종료된 경우
+            self.get_logger().info('Motion finished successfully!')
+            self.motion_flag = False  # 액션 완료 시 플래그를 False로 설정
+            print('2222222222222222222222222222222222222222222222222222222')
+        else:
+            self.get_logger().error('Motion finished with failure.')
+            self.motion_flag = True  # 실패 시 다시 시도
+
+        # 액션 결과에 따라 모드 변경
+        if not self.motion_flag:
+            print('2222222222222222222222222222222222222222222222222222222')
+            self.mode = 'order_check'
+        else:
+            self.mode = 'start'
+
+    # 캡슐 Status
     def request_capsule_status(self):
         self.get_logger().info("🟡 Sending service request...")
         
         request = CapsulePosition.Request()
-        request.req = self.True_messege
+        request.req = True
 
-        future = self.cli.call_async(request)
+        future = self.cli_capsule.call_async(request)
 
         # 새로운 쓰레드에서 spin_until_future_complete 실행
-        spin_thread = threading.Thread(target=self.spin_in_thread, args=(future,))
+        spin_thread = threading.Thread(target=self.spin_capsule_in_thread, args=(future,))
         spin_thread.start()
 
-    def spin_in_thread(self, future):
+    def spin_capsule_in_thread(self, future):
         rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
         
         if future.done():
             try:
                 capsule_status = future.result()
-                self.get_logger().info(f"✅ Received response: {capsule_status.message}")
+                self.get_logger().info(f"✅ Received Capsule_response: {capsule_status.message}")
                 self.interpret_capsule_status(capsule_status.message)
             except Exception as e:
-                self.get_logger().error(f"❌ Service call failed: {str(e)}")
+                self.get_logger().error(f"❌ Service_Capsule call failed: {str(e)}")
+
+    # # Cone Status
+    # def request_cone_status(self):
+    #     self.get_logger().info("🟡 Sending service request...")
+        
+    #     request = CapsulePosition.Request()
+    #     request.req = True
+
+    #     future = self.cli_capsule.call_async(request)
+
+    #     # 새로운 쓰레드에서 spin_until_future_complete 실행
+    #     spin_thread = threading.Thread(target=self.spin_cone_in_thread, args=(future,))
+    #     spin_thread.start()
+
+    # def spin_cone_in_thread(self, future):
+    #     rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        
+    #     if future.done():
+    #         try:
+    #             cone_status = future.result()
+    #             self.get_logger().info(f"✅ Received Capsule_response: {cone_status.message}")
+    #             self.Cone_Status = cone_status.success
+    #         except Exception as e:
+    #             self.get_logger().error(f"❌ Service_Capsule call failed: {str(e)}")
+
+
+    #Moion Following
+
+    def request_motion_following(self):
+        self.get_logger().info("🔵 Sending motion start request to Action Server...")
+
+        goal_msg = MotionFlag.Goal()
+        goal_msg.start = True  # 액션 시작 신호를 설정
+
+        # 액션 서버가 준비될 때까지 대기
+        self.create_action_client.wait_for_server()
+
+        # Goal 전송 및 콜백 설정
+        self._send_goal_future = self.create_action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self.feedback_callback  # 피드백 콜백 함수 등록
+        )
+
+        # Goal 전송 후 결과 콜백 등록
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+
+    def cancel_motion(self):
+        if self.current_goal_handle is not None:
+            self.get_logger().info("Sending cancel request to action server...")
+            cancel_future = self.current_goal_handle.cancel_goal_async()
+            cancel_future.add_done_callback(self.cancel_done_callback)
+
+    def cancel_done_callback(self, future):
+        cancel_response = future.result()
+        if len(cancel_response.goals_canceling) > 0:
+            self.get_logger().info("Goal successfully canceled.")
+        else:
+            self.get_logger().info("Failed to cancel goal.")
+
+
+
+    def spin_motion_in_thread(self, future):
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        
+        if future.done():
+            try:
+                self.motion_flag = future.result().end
+                print(f"self.motion_flag:{self.motion_flag}")
+
+                
+            except Exception as e:
+                self.get_logger().error(f"❌ Service_Motion call failed: {str(e)}")
+
 
     # def request_capsule_status(self):
 
@@ -312,9 +481,8 @@ class RobotArm(Node):
         elif self.mode == 'wait':
             self.mode_receive_message(self.before_mode)
 
-        elif self.mode == 'motion_following':
-            self.motion_following()
-
+        elif self.mode == 'cancel_motion':
+            self.cancel_motion()
 
 
 
@@ -335,13 +503,11 @@ class RobotArm(Node):
             self.mimo.co_initialization()
         
         self.order = []
-        
 
         if not self.order_check_flag or not self.pickandplace_flag:
             self.get_logger().error("Required data (capsule or pick and place) not received. Returning to start.")
-            #self.mode = 'motion_following'
             self.mode = 'start'
-            self.before_mode = 'start'
+            # self.before_mode = 'start'
 
             return
 
@@ -514,7 +680,7 @@ class RobotArm(Node):
         
         self.get_logger().info("Process complete. Returning to initial position...")
         if self.cup_mode == 1:         
-            self.mimo.to_pick_up_zone()
+            self.mimo.to_pick_up_zone(self.capsule_check)
 
             self.mimo.pick_up_zone_to_holder()
             self.mimo.grip_empty_capsule() 
@@ -523,14 +689,13 @@ class RobotArm(Node):
         else:
             self.mimo.co_give_ice_cream_cone()
             
-            
+            ### 서비스 호출
             self.mimo.co_place_cone_tray()        
             self.mimo.co_pick_up_zone_to_holder() 
             self.mimo.co_grip_empty_capsule()  
             self.mimo.co_drop_empty_capsule()
             self.mimo.co_finish_process()            
 
-        self.mode = 'start'
         self.order_check_flag = False
         self.capsule_check_flag = False
         self.pickandplace_flag = True
@@ -539,13 +704,8 @@ class RobotArm(Node):
         self.topping_mode = 1
         self.cup_mode = 0
         self.capsule_position = 0
-
-    def motion_following(self):
-        print('와 신난다')
-        num = self.capsule_check
-        self.mode = 'order_check'
-        # if num in (1, 2, 3):
-        #     self.mode = 'check_motion'
+        self.mode = 'start'
+        self.motion_flag = True
 
         
     # Control and Feedback Logic for Failures
@@ -553,7 +713,6 @@ class RobotArm(Node):
         self.get_logger().error("Motion failure detected. Re-attempting motion...")
         self.mimo.initialization()  # Retry initialization
         self.mode = 'start'
-        #self.mode = 'motion_following'
 
     def handle_grasp_failure(self):
         self.get_logger().error("Grasp failure detected. Adjusting position and retrying...")

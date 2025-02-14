@@ -2,8 +2,6 @@ package com.example.mimokioskapp;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.widget.TextView;
@@ -14,8 +12,6 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class FinalActivity extends AppCompatActivity {
 
-    private DatabaseHelper dbHelper;
-
     private TextView final_text, order_number, time_text;
     private static int orderCounter =1;
 
@@ -23,14 +19,6 @@ public class FinalActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_final);
-
-        dbHelper = new DatabaseHelper(this);
-        long orderId = getIntent().getLongExtra("ORDER_ID", -1);
-
-        if (orderId !=-1){
-            dbHelper.recordOrderCompletion(orderId); //주문 완료 처리
-            displayOrderDetails(orderId);
-        }
         final_text= findViewById(R.id.final_text);
         order_number = findViewById(R.id.order_number);
         time_text = findViewById(R.id.time_text);
@@ -68,11 +56,6 @@ public class FinalActivity extends AppCompatActivity {
             sendRequestToRobot(selectedFlavor);
         }
 
-    }
-    private void displayOrderDetails(long orderId){
-        SQLiteDatabase db= dbHelper.getWritableDatabase();
-        Cursor cursor = db.rawQuery("SELECT * FROM "+DatabaseHelper.ORDERS_TABLE+" WHERE "+DatabaseHelper.COL_ID +" = ?",
-                new String[]{String.valueOf(orderId)});
     }
 
     private void sendRequestToRobot(String flavor) {

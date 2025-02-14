@@ -9,13 +9,6 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.CAMERA"
-        tools:ignore="PermissionImpliesUnsupportedChromeOsHardware" />
-    <uses-feature android:name="android.hardware.usb.host" />
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
-
 
     <application
         android:allowBackup="true"
@@ -27,11 +20,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MimoKioskApp"
         android:usesCleartextTraffic="true"
-        tools:targetApi="31"
-        android:name=".ROSService"
-        android:enabled="true"
-        android:exported="true"
-        tools:ignore="Instantiatable">
+        tools:targetApi="31">
+        <service
+            android:name=".ROSService"
+            android:enabled="true"
+            android:exported="true"></service>
 
         <activity
             android:name=".A_WaitingActivity"
@@ -62,14 +55,9 @@
         <activity
             android:name=".FinalActivity"
             android:label="마무리 화면" />
-        <activity android:name=".SurveyPopActivity"
-            android:label="설문조사 팝업창"/>
         <activity
             android:name=".AdminActivity"
             android:label="관리자 모드 화면"/>
-
-        <activity android:name=".SurveyActivity"
-            android:label="설문조사 화면"/>
 
     </application>
 

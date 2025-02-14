@@ -5,7 +5,7 @@ import rclpy
 from rclpy.node import Node
 from my_first_pkg_msgs.msg import Delta  # 커스텀 ROS 2 메시지
 import copy
-
+from std_msgs.msg import Int64, Bool, String
 class Follow(Node):
     """로봇 메인 클래스"""
     def __init__(self, robot, **kwargs):
@@ -19,11 +19,12 @@ class Follow(Node):
         self.delta_x = 0  # x축 이동값
         self.delta_y = 0  # y축 이동값
         self.distance = 0
-        self.start_flag = True
+        self.start_flag = False
         self.current_position = []
+        self.before_gripper = False
         # ROS 2 토픽 구독
         self.create_subscription(Delta, '/motion_topic', self.motion_callback, 10)
-        
+        #self.create_subscription(Bool, '/motion_start', self.start_callback, 10)
         # 로봇 초기화
         self._robot_init()
 
@@ -31,11 +32,18 @@ class Follow(Node):
         """ROS 2 메시지 콜백 함수"""
         self.delta_x = msg.x  # delta_x 값 업데이트
         self.delta_y = msg.y  # delta_y 값 업데이트
-        self.distance = msg.dis # distance update
+        self.distance = msg.z # distance update
         self.gripper  = msg.gripper
-        
+
         self.get_logger().info(f"Received delta_x: {self.delta_x}, delta_y: {self.delta_y}, distance : {self.distance}")  # f-string 수정
+        # if self.start_signal == True:
         self.move_robot()  # 메시지 수신 후 로봇 이동 함수 호출
+
+    # def start_callback(self, msg: Bool):
+    #     """ROS 2 메시지 콜백 함수"""
+    #     self.start_signal = msg.data  
+    #     # self.move_robot()  # 메시지 수신 후 로봇 이동 함수 호출
+
 
 
     def set_direction(self):
@@ -43,13 +51,13 @@ class Follow(Node):
         leftright = self.delta_x  # delta_x 값 업데이트
         updown = self.delta_y  # delta_y 값 업데이트
         gripper = self.gripper
-        if leftright > 5:
+        if 5<leftright<40 :
             leftright_flag = -1
         elif leftright < -5:
             leftright_flag  = 1
         elif updown > 5:
             updown_flag= 1
-        elif updown < -5:
+        elif -40 <updown < -5:
             updown_flag = -1 
         
         if gripper == False:
@@ -85,6 +93,7 @@ class Follow(Node):
         # if not self._check_code(code, 'set_init_point'):
         #     return
 
+
         print(f"gripper: {gripper}")
         if gripper == 1:
             code = self._arm.open_lite6_gripper()
@@ -95,17 +104,17 @@ class Follow(Node):
             # self._arm.set_pause_time(2)           
         
         ## 가까워질때 
-        if self.dis == 0:
-            code = self._arm.set_position(x=leftright*5 ,y=-3, z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
+        if self.distance == 0:
+            code = self._arm.set_position(x=leftright*3 ,y=3, z=updown*3, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
             if not self._check_code(code, 'set_position'):
                 return
         ## 멀어질때 
-        elif self.dis == 1:
-            code = self._arm.set_position(x=leftright*5 ,y=3, z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
+        elif self.distance == 1:
+            code = self._arm.set_position(x=leftright*3 ,y=-3, z=updown*3, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
             if not self._check_code(code, 'set_position'):
                 return
         else:
-            code = self._arm.set_position(x=leftright*5 ,z=updown*5, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
+            code = self._arm.set_position(x=leftright*3 ,z=updown*3, radius=0, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=True, wait=False)
             if not self._check_code(code, 'set_position'):
                 return
     
@@ -152,10 +161,10 @@ class Follow(Node):
         # if not self._check_code(code, 'set_position'):
         #    return
 
-        code = self._arm.set_position_aa(future_position, radius=1, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=False, wait=False)
-        self.current_position = future_position
-        if not self._check_code(code, 'set_position'):
-           return
+        # code = self._arm.set_position_aa(future_position, radius=1, speed=self._tcp_speed, mvacc=self._tcp_acc, relative=False, wait=False)
+        # self.current_position = future_position
+        # if not self._check_code(code, 'set_position'):
+        #    return
 
     def _robot_init(self):
         """로봇 초기화 설정"""

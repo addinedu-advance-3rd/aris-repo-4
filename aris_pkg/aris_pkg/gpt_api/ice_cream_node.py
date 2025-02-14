@@ -16,7 +16,6 @@ from my_first_pkg_msgs.msg import AppOrder
 
 from dotenv import load_dotenv
 
-
 # =============== 추가: Vosk 관련 import ===============
 import json
 import pyaudio
@@ -66,6 +65,7 @@ def speak(text, callback=None):
         data = f"speaker=nara&volume=0&speed=0&pitch=0&format=mp3&text={enc_text}"
         url = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
 
+
         request = urllib.request.Request(url)
         request.add_header("X-NCP-APIGW-API-KEY-ID", NAVER_CLIENT_ID)
         request.add_header("X-NCP-APIGW-API-KEY", NAVER_CLIENT_SECRET)
@@ -75,6 +75,7 @@ def speak(text, callback=None):
 
         if rescode == 200:
             response_body = response.read()
+
 
             file_path = "/tmp/temp_tts.mp3"
 
@@ -117,7 +118,9 @@ def get_ice_cream_recommendation(user_input):
                     "role": "system",
                     "content": (
 
+
             "You are an employee at an ice cream shop.\n\n"
+
                         "[Mission]\n"
                         "- Recommend the ice cream flavor and topping that best match the customer's preferences.\n\n"
                         "[Context]\n"
@@ -164,7 +167,6 @@ def get_ice_cream_recommendation(user_input):
                         "7) If the customer mentions a flavor that is not allowed (e.g., chocolate, sweet potato, etc.), always map it to either '딸기' or '블루베리', and never output any disallowed flavor.\n"
                         "8) If the customer mentions a topping that is not allowed (e.g., sweet potato, chocolate, etc.), always map it to one of '조리퐁', '코코볼', or '해바라기씨', and never output any disallowed topping.\n"
                         "9) If the customer describes the ice cream flavor with expressions such as '새콤달콤하다', '너무 달지 않은', or '덜 달다', always map it to Blueberry flavor.\n"
-
                     )
                 },
                 {"role": "user", "content": user_input}
@@ -199,7 +201,6 @@ def parse_gpt_recommendation(recommendation_text: str):
 ################################################
 # 5️⃣ 음성 인식 (10초)
 ################################################
-
 def speech_to_text(callback, phrase_time_limit=10, pause_threshold=0.1, non_speaking_duration=0.1):
     def recognize():
         r = sr.Recognizer()
@@ -213,7 +214,6 @@ def speech_to_text(callback, phrase_time_limit=10, pause_threshold=0.1, non_spea
             print("🎙️ 음성 인식 중! 최대 {}초간 말하세요.".format(phrase_time_limit))
             audio_data = r.listen(source, phrase_time_limit=phrase_time_limit)
 
-
         try:
             print("📝 음성을 텍스트로 변환 중...")
             text = r.recognize_google(audio_data, language="ko-KR")
@@ -225,6 +225,9 @@ def speech_to_text(callback, phrase_time_limit=10, pause_threshold=0.1, non_spea
             callback(f"STT_ERROR: {e}")
 
     threading.Thread(target=recognize, daemon=True).start()
+# =============== 추가: Vosk (오픈소스)로 짧은 발화 인식 함수 ===============
+VOSK_MODEL_PATH = "/home/addinedu/dev_ws/src/aris-repo-4/aris_pkg/aris_pkg/gpt_api/vosk-model-small-ko-0.22"  # <-- 실제 모델 경로로 수정
+
 
 # =============== 추가: Vosk (오픈소스)로 짧은 발화 인식 함수 ===============
 VOSK_MODEL_PATH = "/home/addinedu/Downloads/vosk-model-small-ko-0.22"  # <-- 실제 모델 경로로 수정
@@ -289,7 +292,6 @@ def short_speech_to_text_vosk(callback, record_seconds=2):
         p.terminate()
 
     threading.Thread(target=recognize, daemon=True).start()
-
 ################################################
 # 6️⃣ IceCreamNode
 ################################################
@@ -315,7 +317,6 @@ class IceCreamNode(Node):
     def voice_callback(self, msg: Bool):
         if msg.data:
             if self.state == STATE_IDLE:
-
                 self.get_logger().info("[STATE_IDLE] → 안내 멘트 후 사용자 취향 음성 인식")
                 intro_msg = "안녕하세요 고객님. 아이스크림은 딸기, 블루베리 맛이 있고 토핑은 조리퐁, 코코볼, 해바라기씨가 있습니다. 원하시는 맛과 토핑을 골라주세요."
                 speak(intro_msg)                
@@ -333,13 +334,11 @@ class IceCreamNode(Node):
                 self.on_confirmation_received,
                 record_seconds=2
                 )
-
         else:
             self.get_logger().info("음성인식 트리거 OFF.")
 
     def on_preference_received(self, user_text: str):
         if user_text.startswith("STT_ERROR"):
-
             speak("다시 말씀해주세요.",
                   callback=lambda: speech_to_text(
                       self.on_preference_received,
@@ -347,7 +346,6 @@ class IceCreamNode(Node):
                       pause_threshold=0.6,
                       non_speaking_duration=0.5
                   ))
-
             return
 
         # GPT 추천
@@ -368,7 +366,6 @@ class IceCreamNode(Node):
         self.get_logger().info(f"[TTS MESSAGE] {msg}")
         self.state = STATE_WAITING_CONFIRM
 
-
         # 네/아니오 확인 단계 → 짧고 빠른 인식
         speak(msg, callback=lambda:
         short_speech_to_text_vosk(
@@ -383,14 +380,12 @@ class IceCreamNode(Node):
                   self.on_confirmation_received,
                   record_seconds=2
                   ))
-
             return
 
         text_lower = confirm_text.lower().strip()
 
         # "네" → 주문 완료 후 프로그램 종료
-
-        if any(x in text_lower for x in ["네", "예", "yes", "응", "어","넷", "넵","옙", "그래"]):
+        if any(x in text_lower for x in ["네", "예", "yes", "응", "어","넷", "넵","옙", "그래", "네에", "내", "엥", "넹", "에", "애", "네엡", "넴"]):
 
             speak("주문이 완료되었습니다.")
             # AppOrder 발행
@@ -403,7 +398,13 @@ class IceCreamNode(Node):
 
             rclpy.shutdown()
 
-        elif any(x in text_lower for x in ["아니오", "no", "싫어", "아니", "아니요", "아뇨", "노노", "됐어"]):
+            self.state = STATE_IDLE
+            self.rec_flavor = ""
+            self.rec_toppings = ""
+            self.rec_cup_or_cone = ""
+
+        elif any(x in text_lower for x in ["아니오", "no", "싫어", "아니", "아니요", "아뇨", "노노", "됐어", "아녀", "안녕", "하네요", "하니오", "하뇨", "하녀", "아네요", "아니유", "됐어", "아닝", "아냐", "안해도 돼", "이어"]):
+
             speak("알겠습니다. 다른 조합을 원하시면 다시 말씀해주세요.",
                   callback=lambda: speech_to_text(
                       self.on_preference_received,
@@ -411,20 +412,16 @@ class IceCreamNode(Node):
                       pause_threshold=0.6,
                       non_speaking_duration=0.5
                   ))
-
             self.state = STATE_IDLE
             self.rec_flavor = ""
             self.rec_toppings = ""
             self.rec_cup_or_cone = ""
         else:
-
             speak("네 또는 아니오로만 말씀해주세요.",
                   callback=lambda: short_speech_to_text_vosk(
                   self.on_confirmation_received,
                   record_seconds=2
                   ))
-
-
 
 #############################################
 # 7️⃣ main
@@ -442,7 +439,4 @@ def main(args=None):
         rclpy.shutdown()
 
 if __name__ == "__main__":
-
     main()
-
-

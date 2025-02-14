@@ -28,7 +28,8 @@ setup(
             'app_order_publisher = aris_pkg.app.app_order_publisher:main',
             'action_moveit = aris_pkg.moveit.action_moveit:main',
             'ice_cream_node = aris_pkg.gpt_api.ice_cream_node:main',
-            'my_service = aris_pkg.main.my_service:main'
+            'my_service = aris_pkg.main.my_service:main',
+            'emptyFull = aris_pkg.prohibit.emptyFull:main'
         ],
     },
 )

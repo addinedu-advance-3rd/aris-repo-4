@@ -11,6 +11,7 @@ import android.speech.SpeechRecognizer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -40,11 +41,12 @@ public class D_ToppingActivity extends AppCompatActivity {
     private static final String CLIENT_SECRET = "IB5GVyMe4O255EB2u61vHfZMla9GVZ87GcWEuMhW";
 
     // UI Components
-    private RadioButton yes_btn, none_btn, topping1_rb, topping2_rb, topping3_rb;
+    private CheckBox checkTopping1, checkTopping2, checkTopping3;
+    private RadioButton yes_btn, none_btn;
     private Button topping_btn;
-    private LinearLayout toppingLayout;
-    private RadioGroup rg,toppingGroup;
-    private TextView text_price, tv_notice;
+    private LinearLayout topping_ly;
+    private RadioGroup rg;
+    private TextView text_price;
 
     // Business Logic
     private String languageMode = "ko";
@@ -68,18 +70,8 @@ public class D_ToppingActivity extends AppCompatActivity {
         setupIntentData();
         setupUIListeners();
         initializeServices();
+        //startVoiceRecognition();
         playInitialTTS();
-
-        toppingLayout.setVisibility(View.GONE);
-        updatePrice();
-
-        none_btn.setOnClickListener(v -> {
-            toppingLayout.setVisibility(View.GONE);
-            topping1_rb.setChecked(false);
-            topping2_rb.setChecked(false);
-            topping3_rb.setChecked(false);
-            updatePrice();
-        });
     }
 
     // [추가] 데이터베이스 연동 메서드
@@ -90,7 +82,7 @@ public class D_ToppingActivity extends AppCompatActivity {
         values.put(DatabaseHelper.COL_TOPPING, toppings);
         values.put(DatabaseHelper.COL_CUP_CONE, cupcone);
         values.put(DatabaseHelper.COL_PRICE, totalPrice);
-        values.put(DatabaseHelper.COL_TIMESTAMP, System.currentTimeMillis());
+        values.put(DatabaseHelper.COLUMN_TIMESTAMP, System.currentTimeMillis());
 
         try {
             long result = db.insert(DatabaseHelper.ORDER_TABLE, null, values);
@@ -111,16 +103,15 @@ public class D_ToppingActivity extends AppCompatActivity {
     }
 
     private void initializeComponents() {
-        topping1_rb = findViewById(R.id.topping1_rb);
-        topping2_rb = findViewById(R.id.topping2_rb);
-        topping3_rb = findViewById(R.id.topping3_rb);
+        checkTopping1 = findViewById(R.id.checkTopping1);
+        checkTopping2 = findViewById(R.id.checkTopping2);
+        checkTopping3 = findViewById(R.id.checkTopping3);
         yes_btn = findViewById(R.id.yes_btn);
         none_btn = findViewById(R.id.none_btn);
         topping_btn = findViewById(R.id.topping_btn);
-        toppingLayout = findViewById(R.id.toppingLayout);
+        topping_ly = findViewById(R.id.topping_ly);
         text_price = findViewById(R.id.text_price);
         rg = findViewById(R.id.rg);
-        toppingGroup = findViewById(R.id.toppingGroup);
     }
 
     private void setupIntentData() {
@@ -134,40 +125,28 @@ public class D_ToppingActivity extends AppCompatActivity {
 
     private void setupUIListeners() {
         rg.setOnCheckedChangeListener((group, checkedId) -> handleRadioGroupChange(checkedId));
-        toppingGroup.setOnCheckedChangeListener((group, checkedId) -> updatePrice());
-        tv_notice = findViewById(R.id.tv_notice);
 
+        View.OnClickListener priceUpdateListener = v -> updatePrice();
+        checkTopping1.setOnClickListener(priceUpdateListener);
+        checkTopping2.setOnClickListener(priceUpdateListener);
+        checkTopping3.setOnClickListener(priceUpdateListener);
 
-        none_btn.setOnClickListener(v -> {
-            toppingLayout.setVisibility(View.GONE);
-            topping1_rb.setChecked(false);
-            topping2_rb.setChecked(false);
-            topping3_rb.setChecked(false);
-            updatePrice();
-        });
-
-        topping_btn.setOnClickListener(v ->{
-            if (yes_btn.isChecked()|none_btn.isChecked()) {
-                handleConfirmation();
-            }
-            else
-                tv_notice.setVisibility(View.VISIBLE);
-        });
+        topping_btn.setOnClickListener(v -> handleConfirmation());
     }
 
     private void initializeServices() {
         dbHelper = new DatabaseHelper(this);
-        rosService = new ROSService(((ROSService) getApplication()).getIpAddress(),6789,this);
+        rosService = new ROSService(this);
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
     }
 
     private void handleRadioGroupChange(int checkedId) {
         if (checkedId == R.id.yes_btn) {
-            toppingLayout.setVisibility(View.VISIBLE);
+            topping_ly.setVisibility(View.VISIBLE);
             new TTSAsyncTask().execute(languageMode.equals("ko") ?
-                    "죠리퐁, 코코볼, 해바라기씨를 추가할수있어요" : "You can add Jollypong, Coco Ball, and sunflower seeds");
+                    "추가 토핑을 선택해주세요" : "Please select additional toppings");
         } else {
-            toppingLayout.setVisibility(View.INVISIBLE);
+            topping_ly.setVisibility(View.INVISIBLE);
             clearToppings();
         }
         updatePrice();
@@ -176,11 +155,17 @@ public class D_ToppingActivity extends AppCompatActivity {
     private void updatePrice() {
         totalPrice = basePrice;
         if (yes_btn.isChecked()) {
-            if(topping1_rb.isChecked()) totalPrice +=toppingPrice;
-            else if(topping2_rb.isChecked()) totalPrice +=toppingPrice;
-            else if(topping3_rb.isChecked()) totalPrice +=toppingPrice;
+            totalPrice += (getCheckedToppingCount() * toppingPrice);
         }
         updatePriceDisplay();
+    }
+
+    private int getCheckedToppingCount() {
+        int count = 0;
+        if (checkTopping1.isChecked()) count++;
+        if (checkTopping2.isChecked()) count++;
+        if (checkTopping3.isChecked()) count++;
+        return count;
     }
 
     private void updatePriceDisplay() {
@@ -190,20 +175,18 @@ public class D_ToppingActivity extends AppCompatActivity {
     }
 
     private void clearToppings() {
-        toppingGroup.clearCheck(); // 라디오 그룹의 선택을 완전히 해제
+        checkTopping1.setChecked(false);
+        checkTopping2.setChecked(false);
+        checkTopping3.setChecked(false);
     }
 
-
-
     private void handleConfirmation() {
-        String topping = getSelectedToppings();
-        saveOrderToDatabase(selectedFlavor, topping);
+        String toppings = getSelectedToppings();
+        saveOrderToDatabase(selectedFlavor, toppings);
         if (rosService != null) {
-            String orderData = "Topping: " + topping + " Cup/Cone: " + cupcone;
-            rosService.sendDataToROS2(orderData);
             dbHelper.processOrder(
                     selectedFlavor,
-                    topping,
+                    toppings,
                     cupcone
             );
         }
@@ -215,7 +198,6 @@ public class D_ToppingActivity extends AppCompatActivity {
                 .putExtra("selectedFlavor", selectedFlavor)
                 .putExtra("cupcone", cupcone)
                 .putExtra("languageMode", languageMode));
-        finish();
     }
 
     /*private void checkROSConnection() {
@@ -230,9 +212,9 @@ public class D_ToppingActivity extends AppCompatActivity {
         if (!yes_btn.isChecked()) return "None";
 
         StringBuilder toppings = new StringBuilder();
-        if (topping1_rb.isChecked()) toppings.append("죠리퐁 ");
-        else if (topping2_rb.isChecked()) toppings.append("코코볼 ");
-        else if (topping3_rb.isChecked()) toppings.append("해바라기씨 ");
+        if (checkTopping1.isChecked()) toppings.append("죠리퐁 ");
+        if (checkTopping2.isChecked()) toppings.append("코코볼 ");
+        if (checkTopping3.isChecked()) toppings.append("해바라기씨 ");
         return toppings.toString().trim();
     }
 
@@ -256,9 +238,9 @@ public class D_ToppingActivity extends AppCompatActivity {
     }
 
     private void handleToppingSelection(String command) {
-        if (command.contains("1") || command.contains("죠리퐁")) topping1_rb.toggle();
-        if (command.contains("2") || command.contains("코코볼")) topping2_rb.toggle();
-        if (command.contains("3") || command.contains("해바라기")) topping3_rb.toggle();
+        if (command.contains("1") || command.contains("죠리퐁")) checkTopping1.toggle();
+        if (command.contains("2") || command.contains("코코볼")) checkTopping2.toggle();
+        if (command.contains("3") || command.contains("해바라기")) checkTopping3.toggle();
         updatePrice();
     }
 
@@ -300,7 +282,7 @@ public class D_ToppingActivity extends AppCompatActivity {
 
     private void playInitialTTS() {
         String message = languageMode.equals("ko") ?
-                "토핑을 추가하시겠습니까?" :
+                "토핑을 추가하시겠습니까? 네 또는 아니오로 대답해주세요" :
                 "Would you like to add toppings? Please say yes or no";
         new TTSAsyncTask().execute(message);
     }
@@ -359,29 +341,10 @@ public class D_ToppingActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-            stopTTS();
-
-            // 결과 처리
             if (result.endsWith(".mp3")) {
-                stopTTS();
-                // MP3 파일이 생성되었으므로 이를 재생하는 코드 추가
-                mediaPlayer = new MediaPlayer();
-                try {
-                    mediaPlayer.setDataSource(result); // 생성된 MP3 파일 경로를 전달
-                    mediaPlayer.prepare(); // 파일 준비
-                    mediaPlayer.start(); // 음성 재생 시작
-                    mediaPlayer.setOnCompletionListener(mp -> {
-                        mp.release();
-                        mediaPlayer = null;
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    Toast.makeText(D_ToppingActivity.this, "음성 파일 재생 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                }
+                playAudio(result);
             } else {
-                // 오류 메시지 처리
-                Toast.makeText(D_ToppingActivity.this, "TTS 오류: " + result, Toast.LENGTH_LONG).show();
+                showToast("TTS Error: " + result);
             }
         }
 
@@ -402,15 +365,6 @@ public class D_ToppingActivity extends AppCompatActivity {
 
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-    }
-    private void stopTTS(){
-        if(mediaPlayer!=null){
-            if (mediaPlayer.isPlaying()){
-                mediaPlayer.stop();
-            }
-            mediaPlayer.release();
-            mediaPlayer=null;
-        }
     }
 
     @Override

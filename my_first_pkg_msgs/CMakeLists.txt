@@ -20,6 +20,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/InventoryInfo.msg"
   "msg/AppOrder.msg"
   "srv/CapsulePosition.srv"
+  "srv/MotionFlag.srv"
+  "action/MotionFlag.action"
 )
 
 

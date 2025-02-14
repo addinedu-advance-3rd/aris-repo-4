@@ -1,7 +1,7 @@
 package com.example.mimokioskapp;
 
-import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.media.MediaPlayer;
@@ -12,12 +12,11 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
+import android.widget.EditText;
 
 import androidx.annotation.Nullable;
 
@@ -30,21 +29,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.Socket;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.concurrent.ExecutorService;
 
 public class A_WaitingActivity extends Activity {
-
-    private long orderStartTime; //주문 시작 시간 기록
-
-    private static final int ROS2_PORT_VOICE = 6666;
-    private Socket socket;
-    private OutputStream outputStream;
-    private InputStream inputStream;
     private static final String TAG = "A_WaitingActivity"; // 로그 태그
     private static final String CLIENT_ID = "a4zgp0vwh8"; // 네이버 클라이언트 ID
     private static final String CLIENT_SECRET = "IB5GVyMe4O255EB2u61vHfZMla9GVZ87GcWEuMhW"; // 네이버 클라이언트 Secret
@@ -57,14 +47,7 @@ public class A_WaitingActivity extends Activity {
     private FrameLayout touch_area;
     private TextView waiting_text;
     private TextView recognized_text;
-    private ExecutorService executor;
-    private MediaPlayer mediaPlayer;
-
-    private ROSService rosService;
     private boolean isListening = false;
-
-    private DatabaseHelper dbHelper;
-    private long currentOrderId;
 
     private SpeechRecognizer speechRecognizer;
 
@@ -73,31 +56,14 @@ public class A_WaitingActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_a_waiting);
 
-        dbHelper = new DatabaseHelper(this);
-        currentOrderId = dbHelper.recordOrderStart(); //주문 시작 시간 기록
-
-
-        rosService = new ROSService(((ROSService) getApplication()).getIpAddress(),8888,this);
-
         touch_area = findViewById(R.id.touch_area);
         language_btn = findViewById(R.id.language_btn);
         waiting_text = findViewById(R.id.waiting_text);
         recognized_text = findViewById(R.id.recognized_text);
-        Button voiceServiceButton = findViewById(R.id.voice_service_btn);
-        voiceServiceButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showVoiceServiceDialog();
-            }
-        });
 
         // TTS 초기화 및 환영 메시지 출력
         new TTSAsyncTask().execute(languageMode.equals("ko") ? "어서 오세요. 주문을 시작하려면 화면을 터치하거나 음성으로 말씀해주세요." : "Welcome. Please touch the screen or speak to start your order.");
-        // 터치 영역 클릭 리스너
-        touch_area.setOnClickListener(v -> {
-            stopTTS();
-            goToNextScreen();
-        });
+
         // 언어 설정 버튼 클릭 리스너
         language_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -120,26 +86,10 @@ public class A_WaitingActivity extends Activity {
         // 음성 인식 시작
         startListeningForOrder();
 
-
+        // 터치 영역 클릭 리스너
+        touch_area.setOnClickListener(v -> goToNextScreen());
     }
 
-    private void showVoiceServiceDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("음성 서비스로 주문하시겠습니까?")
-                .setPositiveButton("확인", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        String data="True";
-                        rosService.sendDataToROS2(data);
-
-                        Intent intent = new Intent(A_WaitingActivity.this, FinalActivity.class);
-                        startActivity(intent);
-                        finish();
-                    }
-                })
-                .setNegativeButton("취소", null)
-                .show();
-    }
     private class TTSAsyncTask extends AsyncTask<String, Void, String> {
         @Override
         protected String doInBackground(String... params) {
@@ -194,33 +144,21 @@ public class A_WaitingActivity extends Activity {
 
         @Override
         protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-            stopTTS();
-
-            // 결과 처리
             if (result.endsWith(".mp3")) {
-                stopTTS();
-                // MP3 파일이 생성되었으므로 이를 재생하는 코드 추가
-                mediaPlayer = new MediaPlayer();
+                MediaPlayer mediaPlayer = new MediaPlayer();
                 try {
-                    mediaPlayer.setDataSource(result); // 생성된 MP3 파일 경로를 전달
-                    mediaPlayer.prepare(); // 파일 준비
-                    mediaPlayer.start(); // 음성 재생 시작
-                    mediaPlayer.setOnCompletionListener(mp -> {
-                        mp.release();
-                        mediaPlayer = null;
-                    });
+                    mediaPlayer.setDataSource(result);
+                    mediaPlayer.prepare();
+                    mediaPlayer.start();
                 } catch (IOException e) {
                     e.printStackTrace();
-                    Toast.makeText(A_WaitingActivity.this, "음성 파일 재생 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(A_WaitingActivity.this, "TTS 재생 오류: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
             } else {
-                // 오류 메시지 처리
                 Toast.makeText(A_WaitingActivity.this, "TTS 오류: " + result, Toast.LENGTH_LONG).show();
             }
         }
     }
-
 
     private void startListeningForOrder() {
         if (speechRecognizer == null) {
@@ -297,18 +235,17 @@ public class A_WaitingActivity extends Activity {
         builder.setTitle("비밀번호를 입력하세요");
 
         // 비밀번호 입력 필드 추가
-        final EditText pw = new EditText(this);
-        builder.setView(pw);
+        final EditText input = new EditText(this);
+        builder.setView(input);
 
         builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                String enteredPassword = pw.getText().toString();
+                String enteredPassword = input.getText().toString();
                 if (enteredPassword.equals(ADMIN_PASSWORD)) {
                     // 비밀번호가 맞으면 관리자 화면으로 이동
                     Intent intent = new Intent(A_WaitingActivity.this, AdminActivity.class);
                     startActivity(intent);
-                    finish();
                 } else {
                     // 비밀번호가 틀리면 경고 메시지 표시
                     Toast.makeText(A_WaitingActivity.this, "비밀번호가 틀렸습니다.", Toast.LENGTH_SHORT).show();
@@ -320,25 +257,9 @@ public class A_WaitingActivity extends Activity {
         builder.show();
     }
     private void goToNextScreen() {
-        stopTTS();
-        if(speechRecognizer!=null){
-            speechRecognizer.stopListening();
-        }
         Intent intent = new Intent(A_WaitingActivity.this, B_OrderActivity.class);
         intent.putExtra("languageMode", languageMode);
-        intent.putExtra("ORDER_ID", currentOrderId);
         startActivity(intent);
-        finish();
-    }
-
-    private void stopTTS(){
-        if(mediaPlayer!=null){
-            if (mediaPlayer.isPlaying()){
-                mediaPlayer.stop();
-            }
-            mediaPlayer.release();
-            mediaPlayer=null;
-        }
     }
 
     @Override
@@ -349,18 +270,6 @@ public class A_WaitingActivity extends Activity {
             speechRecognizer = null;
         }
     }
-    @Override
-    protected void onDestroy(){
-        super.onDestroy();
-        if(speechRecognizer !=null){
-            speechRecognizer.destroy();
-            speechRecognizer = null;
-        }
-        if (mediaPlayer !=null){
-            mediaPlayer.release();
-            mediaPlayer = null;
-        }
-    }
 
     @Override
     protected void onResume() {
@@ -368,4 +277,3 @@ public class A_WaitingActivity extends Activity {
         startListeningForOrder(); // 앱이 다시 활성화되면 음성 인식 다시 시작
     }
 }
-
