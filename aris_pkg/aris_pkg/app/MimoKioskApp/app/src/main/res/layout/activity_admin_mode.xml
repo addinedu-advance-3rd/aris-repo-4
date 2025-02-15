@@ -1,43 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-
+    android:layout_height="match_parent"
+    android:background="@color/logo_pink1"
+    android:orientation="vertical">
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="16dp">
-
+        android:layout_height="match_parent">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- 일반 텍스트로 데이터 표시 -->
+            <Button
+                android:id="@+id/exit_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="16dp"
+                android:background="@drawable/btn_style"
+                android:shadowColor="#FF4AF9"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="5"
+                android:text="나가기"
+                android:textColor="@color/logo_pink1"
+                android:textStyle="bold"/>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_gravity="end"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tv_ip_address"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="192.168.0.37"
+                    android:textColor="@android:color/black"
+                    android:textSize="24dp" />
+
+                <Button
+                    android:id="@+id/btn_edit_ip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="IP 주소 수정" />
+            </LinearLayout>
+
+            <!-- 주문 테이블 제목 -->
+
             <TextView
                 android:id="@+id/tv_inventory_data"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="데이터 로딩 중..."
-                android:paddingBottom="20dp" />
+                android:paddingLeft="20dp"
+                android:paddingBottom="20dp"
+                android:text="데이터 로딩 중..." />
 
-            <!-- 주문 테이블 제목 -->
+            <Button
+                android:id="@+id/export_DB_btn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DB내보내기" />
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📌 주문 내역"
+                android:text="📌 고객관리 데이터"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:paddingBottom="10dp" />
+                android:paddingBottom="10dp"
+                android:paddingLeft="20dp"/>
 
-            <!-- 주문 내역을 표시할 TableLayout -->
-            <TableLayout
-                android:id="@+id/order_table"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:stretchColumns="*" />
+    <HorizontalScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <!-- 주문 내역을 표시할 TableLayout -->
+        <TableLayout
+            android:id="@+id/client_data"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:stretchColumns="*"
+            android:paddingLeft="20dp"/>
+    </HorizontalScrollView>
+
+
         </LinearLayout>
     </ScrollView>
-
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

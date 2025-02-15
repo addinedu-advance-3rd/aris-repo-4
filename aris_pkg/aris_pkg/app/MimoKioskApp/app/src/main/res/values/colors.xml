@@ -7,4 +7,14 @@
     <color name="violet">#5142A1</color>
     <color name="purple">#AEA4FC</color>
 
+    <color name="logo_purple1">#D4D1FF</color>
+    <color name="logo_purple2">#9CA7E8</color>
+    <color name="logo_purple3">#828CC5</color>
+    <color name="logo_purple4">#464287</color>
+    <color name="logo_pink1">#FFE0FC</color>
+    <color name="logo_pink2">#E4A1C5</color>
+    <color name="text_shadow">#FF4AF9</color>
+
+
+
 </resources>
