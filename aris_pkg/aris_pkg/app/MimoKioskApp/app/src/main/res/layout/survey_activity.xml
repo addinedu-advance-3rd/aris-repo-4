@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/white">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+    <!-- 고객 유형 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="고객 유형"
+                android:textSize="16sp"
+                android:layout_marginBottom="8dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerCustomerType"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/spinner_border"/>
+
+            <!-- 성별 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="성별"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerGender"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/spinner_border"/>
+
+            <!-- 연령대 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="연령대"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"/>
+
+            <Spinner
+                android:id="@+id/spinnerAgeGroup"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/spinner_border"/>
+
+            <!-- 전화번호 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="전화번호"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"/>
+
+            <EditText
+                android:id="@+id/etPhoneNumber"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:inputType="phone"
+                android:hint="010-1234-5678"
+                android:background="@drawable/edittext_border"/>
+
+            <!-- 만족도 -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="서비스 만족도"
+                android:textSize="16sp"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"/>
+
+            <RatingBar
+                android:id="@+id/ratingSatisfaction"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:numStars="5"
+                android:stepSize="1.0"
+                android:rating="4"
+                android:layout_gravity="center"/>
+
+            <!-- 제출 버튼 -->
+            <Button
+                android:id="@+id/btnSubmit"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="제출하기"
+                android:layout_marginTop="32dp"
+                android:backgroundTint="@color/purple"
+                android:textColor="@color/white"/>
+            <Button
+                android:id="@+id/btnCancle"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="설문취소"
+                android:layout_marginTop="32dp"
+                android:backgroundTint="@color/purple"
+                android:textColor="@color/white"/>
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

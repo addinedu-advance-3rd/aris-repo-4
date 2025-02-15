@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/pink1"
+    android:gravity="center"
+    android:orientation="vertical">
+    <TextView
+        android:id="@+id/recognized_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="인형뽑기를 시작합니다." />
+
+    <Button
+        android:id="@+id/start_btn"
+        android:layout_width="169dp"
+        android:layout_height="wrap_content"
+        android:onClick="showAdminPasswordDialog"
+        android:text="인형 뽑기 시작" />
+
+
+    <ImageView
+        android:id="@+id/iv_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/iv1"
+        android:visibility="gone"/>
+
+    <ImageView
+        android:id="@+id/iv_2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/iv2"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:id="@+id/both_hand"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <ImageView
+            android:id="@+id/left"
+            android:layout_width="396dp"
+            android:layout_height="wrap_content"
+            android:src="@drawable/left_hand" />
+
+        <ImageView
+            android:id="@+id/right"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/right_hand" />
+
+    </LinearLayout>
+
+
+
+</LinearLayout>
