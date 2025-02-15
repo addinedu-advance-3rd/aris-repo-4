@@ -37,12 +37,13 @@ public class C_CupConeActivity extends AppCompatActivity {
     private static final String CLIENT_SECRET = "IB5GVyMe4O255EB2u61vHfZMla9GVZ87GcWEuMhW"; // 네이버 클라이언트 Secret
 
     private String languageMode = "";
-    private String selectedFlavor = "";
     private String cupcone = "";
     private ToggleButton language_btn;
     private ImageButton cup_btn, cone_btn;
     private TextView order_text;
+    private MediaPlayer mediaPlayer;
     private SpeechRecognizer speechRecognizer;
+    private long orderStartTime;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,12 +56,8 @@ public class C_CupConeActivity extends AppCompatActivity {
         order_text = findViewById(R.id.order_text);
 
         // Intent로 전달된 데이터 가져오기
-        selectedFlavor = getIntent().getStringExtra("selectedFlavor");
         languageMode = getIntent().getStringExtra("languageMode");
-
-        if (selectedFlavor != null) {
-            Toast.makeText(this, "선택된 맛: " + selectedFlavor, Toast.LENGTH_SHORT).show();
-        }
+        orderStartTime = getIntent().getLongExtra("orderStartTime",0);
 
         // 언어 설정 버튼 클릭 리스너
         language_btn.setOnClickListener(new View.OnClickListener() {
@@ -83,7 +80,7 @@ public class C_CupConeActivity extends AppCompatActivity {
 
         // TTS로 안내 메시지 출력
         if ("ko".equals(languageMode)) {
-            new TTSAsyncTask().execute("컵과 콘 중에서 하나만 선택해주세요.");
+            new TTSAsyncTask().execute("컵과 콘 중에서 하나만 선택하세요.");
         } else if ("eng".equals(languageMode)) {
             new TTSAsyncTask().execute("Please choose between a cup and a cone.");
         }
@@ -161,17 +158,21 @@ public class C_CupConeActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
+            stopTTS();
 
             // 결과 처리
             if (result.endsWith(".mp3")) {
+                stopTTS();
                 // MP3 파일이 생성되었으므로 이를 재생하는 코드 추가
-                MediaPlayer mediaPlayer = new MediaPlayer();
+                mediaPlayer = new MediaPlayer();
                 try {
                     mediaPlayer.setDataSource(result); // 생성된 MP3 파일 경로를 전달
                     mediaPlayer.prepare(); // 파일 준비
                     mediaPlayer.start(); // 음성 재생 시작
-
-                    Toast.makeText(C_CupConeActivity.this, "음성 파일이 생성되었고 재생되었습니다: " + result, Toast.LENGTH_LONG).show();
+                    mediaPlayer.setOnCompletionListener(mp -> {
+                        mp.release();
+                        mediaPlayer = null;
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                     Toast.makeText(C_CupConeActivity.this, "음성 파일 재생 오류: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -251,32 +252,53 @@ public class C_CupConeActivity extends AppCompatActivity {
         intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
         speechRecognizer.startListening(intent);
     }
+    private void goToNextScreen() {
+        stopTTS();
+        if (speechRecognizer !=null){
+            speechRecognizer.stopListening();
+        }
+
+        Intent intent = new Intent(C_CupConeActivity.this, C_FlavorActivity.class);
+        intent.putExtra("languageMode", languageMode);
+        intent.putExtra("cupcone", cupcone);
+        intent.putExtra("orderStartTime", orderStartTime);
+        startActivity(intent);
+        finish();
+    }
+
+    private void stopTTS(){
+        if(mediaPlayer!=null){
+            if (mediaPlayer.isPlaying()){
+                mediaPlayer.stop();
+            }
+            mediaPlayer.release();
+            mediaPlayer=null;
+        }
+    }
 
     private void selectCup() {
         cupcone = "cup";
-        new TTSAsyncTask().execute(languageMode.equals("ko") ? "컵으로 선택하셨습니다." : "You chose the cup.");
         goToNextScreen();
     }
 
     private void selectCone() {
         cupcone = "cone";
-        new TTSAsyncTask().execute(languageMode.equals("ko") ? "콘으로 선택하셨습니다." : "You chose the cone.");
         goToNextScreen();
     }
 
-    private void goToNextScreen() {
-        Intent intent = new Intent(C_CupConeActivity.this, C_FlavorActivity.class);
-        intent.putExtra("languageMode", languageMode);
-        intent.putExtra("cupcone", cupcone);
-        startActivity(intent);
-        finish();
-    }
+
 
     @Override
-    protected void onDestroy() {
+    protected void onDestroy(){
         super.onDestroy();
+        stopTTS();
         if (speechRecognizer != null) {
-            speechRecognizer.destroy(); // 리소스 해제
+            speechRecognizer.destroy();
+            speechRecognizer = null;
+        }
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+            mediaPlayer = null;
         }
     }
 }
