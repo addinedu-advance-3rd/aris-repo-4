@@ -20,7 +20,7 @@ public class ClawActivity extends AppCompatActivity {
 
     private Button start_btn;
     private TextView recognized_text;
-    private ImageView iv_1,iv_2;
+    private ImageView iv_1;
     private LinearLayout both_hand;
     private CountDownTimer countDownTimer;
     private String savedIp;
@@ -38,7 +38,6 @@ public class ClawActivity extends AppCompatActivity {
         start_btn = findViewById(R.id.start_btn);
         recognized_text = findViewById(R.id.recognized_text);
         iv_1 = findViewById(R.id.iv_1);
-        iv_2 = findViewById(R.id.iv_2);
         both_hand = findViewById(R.id.both_hand);
         start_btn.setOnClickListener(new View.OnClickListener() {
             @Override

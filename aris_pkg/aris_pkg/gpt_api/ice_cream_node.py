@@ -20,7 +20,6 @@ from dotenv import load_dotenv
 import json
 import pyaudio
 from vosk import Model, KaldiRecognizer
-
 ###############################
 # 상태 정의
 ###############################
@@ -30,9 +29,7 @@ STATE_WAITING_CONFIRM = 1
 ###############################################
 # 1️⃣ .env에서 환경 변수 로드 (NAVER TTS & OpenAI)
 ###############################################
-
-env_path = "/home/addinedu/mimo_ws/src/aris-repo-4/aris_pkg/aris_pkg/gpt_api/.env"
-
+env_path = "/home/addinedu/dev_ws/src/aris-repo-4/aris_pkg/aris_pkg/gpt_api/.env"
 load_dotenv(dotenv_path=env_path)
 
 NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "").strip()
@@ -75,10 +72,7 @@ def speak(text, callback=None):
 
         if rescode == 200:
             response_body = response.read()
-
-
-            file_path = "/tmp/temp_tts.mp3"
-
+            file_path = "/home/addinedu/Downloads/temp_tts.mp3"
             with open(file_path, 'wb') as f:
                 f.write(response_body)
 
@@ -117,10 +111,7 @@ def get_ice_cream_recommendation(user_input):
                 {
                     "role": "system",
                     "content": (
-
-
-            "You are an employee at an ice cream shop.\n\n"
-
+                        "You are an employee at an ice cream shop.\n\n"
                         "[Mission]\n"
                         "- Recommend the ice cream flavor and topping that best match the customer's preferences.\n\n"
                         "[Context]\n"
@@ -227,10 +218,6 @@ def speech_to_text(callback, phrase_time_limit=10, pause_threshold=0.1, non_spea
     threading.Thread(target=recognize, daemon=True).start()
 # =============== 추가: Vosk (오픈소스)로 짧은 발화 인식 함수 ===============
 VOSK_MODEL_PATH = "/home/addinedu/dev_ws/src/aris-repo-4/aris_pkg/aris_pkg/gpt_api/vosk-model-small-ko-0.22"  # <-- 실제 모델 경로로 수정
-
-
-# =============== 추가: Vosk (오픈소스)로 짧은 발화 인식 함수 ===============
-VOSK_MODEL_PATH = "/home/addinedu/Downloads/vosk-model-small-ko-0.22"  # <-- 실제 모델 경로로 수정
 
 try:
     vosk_model = Model(VOSK_MODEL_PATH)
@@ -358,9 +345,7 @@ class IceCreamNode(Node):
         self.rec_toppings = toppings
         self.rec_cup_or_cone = cup_or_cone
 
-
         msg = f"{flavor}+{toppings}+{cup_or_cone} 이대로 주문하시겠습니까?\n" \
-
               "네라고 하시면 주문이 완료되고, 아니오라고 하시면 다시 주문 하실 수 있습니다."
 
         self.get_logger().info(f"[TTS MESSAGE] {msg}")
@@ -386,7 +371,6 @@ class IceCreamNode(Node):
 
         # "네" → 주문 완료 후 프로그램 종료
         if any(x in text_lower for x in ["네", "예", "yes", "응", "어","넷", "넵","옙", "그래", "네에", "내", "엥", "넹", "에", "애", "네엡", "넴"]):
-
             speak("주문이 완료되었습니다.")
             # AppOrder 발행
             order_msg = AppOrder()
@@ -395,7 +379,6 @@ class IceCreamNode(Node):
             self.pub_order.publish(order_msg)
 
             self.get_logger().info(f"[주문 완료] flavor={self.rec_flavor}, toppings={self.rec_toppings}, cup_or_cone={order_msg.cup_or_cone}")
-
             rclpy.shutdown()
 
             self.state = STATE_IDLE
@@ -404,7 +387,6 @@ class IceCreamNode(Node):
             self.rec_cup_or_cone = ""
 
         elif any(x in text_lower for x in ["아니오", "no", "싫어", "아니", "아니요", "아뇨", "노노", "됐어", "아녀", "안녕", "하네요", "하니오", "하뇨", "하녀", "아네요", "아니유", "됐어", "아닝", "아냐", "안해도 돼", "이어"]):
-
             speak("알겠습니다. 다른 조합을 원하시면 다시 말씀해주세요.",
                   callback=lambda: speech_to_text(
                       self.on_preference_received,
@@ -422,6 +404,7 @@ class IceCreamNode(Node):
                   self.on_confirmation_received,
                   record_seconds=2
                   ))
+
 
 #############################################
 # 7️⃣ main
